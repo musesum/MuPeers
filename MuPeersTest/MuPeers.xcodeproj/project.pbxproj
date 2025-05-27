@@ -8,12 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		800C1C692DE36E150001B15D /* PeersApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 800C1C682DE36E150001B15D /* PeersApp.swift */; };
-		8064B7302DE4E7A90036F978 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8064B72F2DE4E7A90036F978 /* Assets.xcassets */; };
+		8064B74B2DE56D4D0036F978 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8064B74A2DE56D4D0036F978 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		800C1C682DE36E150001B15D /* PeersApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeersApp.swift; sourceTree = "<group>"; };
-		8064B72F2DE4E7A90036F978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = "/Users/warren/Dev/Deep/MuPeers copy 2/MuPeersTest/Assets.xcassets"; sourceTree = "<absolute>"; };
+		8064B74A2DE56D4D0036F978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		808C79F02DCFD21100BC61E1 /* MuPeers.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MuPeers.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -40,7 +40,7 @@
 		808C79E72DCFD21100BC61E1 = {
 			isa = PBXGroup;
 			children = (
-				8064B72F2DE4E7A90036F978 /* Assets.xcassets */,
+				8064B74A2DE56D4D0036F978 /* Assets.xcassets */,
 				800C1C682DE36E150001B15D /* PeersApp.swift */,
 				800C1C522DE36CA20001B15D /* MuPeers */,
 				808C79F12DCFD21100BC61E1 /* Products */,
@@ -119,7 +119,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8064B7302DE4E7A90036F978 /* Assets.xcassets in Resources */,
+				8064B74B2DE56D4D0036F978 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

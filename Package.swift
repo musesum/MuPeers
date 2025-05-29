@@ -14,9 +14,6 @@ let package = Package(
             name: "MuPeers",
             dependencies: [
                
-            ]),
-        .testTarget(
-            name: "MuPeersTests",
-            dependencies: ["MuPeers"]),
+            ])
     ]
 )

@@ -6,26 +6,41 @@ import Network
 typealias Framer = NWProtocolFramer.Instance
 
 // types of messages for PeerFramer
-enum PeerFramerType: UInt32 {
-    case invalid   = 0
-    case handshake = 1
-    case alive     = 2 // TimeInterval of sender, keep alive
-    case data      = 3 // Data, usually Codable
+public enum FramerType: UInt32 {
+    case invalid
+    case handshake  // verify / manage peers
+    case data       // Generic Data, usually Codable
+    case midi       // midi message
+    case touch      // touch / draw
+    case menu       // menu selection
+    case hand       // hand pose
+
 
     var description: String {
         switch self {
         case .invalid   : return "invalid"
         case .handshake : return "handshake"
-        case .alive     : return "alive"
         case .data      : return "data"
+        case .midi      : return "midi"
+        case .touch     : return "touch"
+        case .menu      : return "menu"
+        case .hand      : return "hand"
+
         }
     }
+    /// this is a placeholder, no way to select
+    /// serviceClass from within a framer, so
+    /// special services like video, audio, etc
+    /// should have their own framer
     var serviceClass: NWParameters.ServiceClass {
         switch self {
         case .invalid   : return .background
         case .handshake : return .signaling
-        case .alive     : return .background
         case .data      : return .responsiveData
+        case .midi      : return .responsiveData
+        case .touch     : return .responsiveData
+        case .menu      : return .responsiveData
+        case .hand      : return .responsiveData
         }
     }
 }
@@ -47,7 +62,7 @@ class PeerFramer: NWProtocolFramerImplementation {
                       messageLength: Int,
                       isComplete: Bool) {
 
-        let type = message.peerMessageType
+        let type = message.framerType
         let header = PeerProtocolHeader(type: type.rawValue, length: UInt32(messageLength))
         
         framer.writeOutput(data: header.encodedData)
@@ -74,11 +89,11 @@ class PeerFramer: NWProtocolFramerImplementation {
                 }
 
             guard parsed, let header = tempHeader else { return headerSize }
-            var messageType = PeerFramerType.invalid
-            if let parsedMessageType = PeerFramerType(rawValue: header.type) {
+            var messageType = FramerType.invalid
+            if let parsedMessageType = FramerType(rawValue: header.type) {
                 messageType = parsedMessageType
             }
-            let message = NWProtocolFramer.Message(peerMessageType: messageType)
+            let message = NWProtocolFramer.Message(framerType: messageType)
 
             if !framer.deliverInputNoCopy(length: Int(header.length), message: message, isComplete: true) {
                 return 0
@@ -89,13 +104,13 @@ class PeerFramer: NWProtocolFramerImplementation {
 
 // custom PeerFramer types for header
 extension NWProtocolFramer.Message {
-    convenience init(peerMessageType: PeerFramerType) {
+    convenience init(framerType: FramerType) {
         self.init(definition: PeerFramer.definition)
-        self["PeerFramerType"] = peerMessageType
+        self["FramerType"] = framerType
     }
 
-    var peerMessageType: PeerFramerType {
-        if let type = self["PeerFramerType"] as? PeerFramerType {
+    var framerType: FramerType {
+        if let type = self["FramerType"] as? FramerType {
             return type
         } else {
             return .invalid

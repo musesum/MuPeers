@@ -26,7 +26,6 @@ class PeersBrowser: @unchecked Sendable {
 
     // Start browsing for peers
     func setupBrowser() {
-
         do {
             let parameters = NWParameters.make(secret: peersConfig.secret)
             let browser = NWBrowser(for: .bonjour(type: peersConfig.service, domain: nil), using: parameters)

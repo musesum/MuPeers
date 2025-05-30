@@ -20,40 +20,43 @@ public struct PeersConfig {
 
 public class Peers {
 
-    let peersConfig: PeersConfig
-    let peersBrowser: PeersBrowser
-    let peersListener: PeersListener
-    let peersConnection: PeersConnection
-    let peerIdNumber: UInt64
+    let browser: PeersBrowser
+    let listener: PeersListener
+    let connections: PeersConnection
     let peersLog: PeersLog
-
+    
     public let peerId: String
-
+    
     public init(_ config: PeersConfig) {
 
-        peersConfig     = config
-        peerIdNumber    = UInt64.random(in: 1...UInt64.max)
-        peerId          = PeersPrefix + peerIdNumber.base32
-        peersLog        = PeersLog       (peerId)
-        peersConnection = PeersConnection(peerId, peersLog, peersConfig)
-        peersListener   = PeersListener  (peerId, peersLog, peersConfig, peersConnection)
-        peersBrowser    = PeersBrowser   (peerId, peersLog, peersConfig, peersConnection)
+        peerId      = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
+        peersLog    = PeersLog       (peerId)
+        connections = PeersConnection(peerId, peersLog, config)
+        listener    = PeersListener  (peerId, peersLog, config, connections)
+        browser     = PeersBrowser   (peerId, peersLog, config, connections)
     }
-
-    public func setDelegate(_ delegate: PeersDelegate, for peerId: String) {
-        peersConnection.delegates[peerId] = delegate
-    }
-    public func removeDelegate(_ peerId: String) {
-        peersConnection.delegates.removeValue(forKey: peerId)
-    }
-    public func sendItem(_ getData: ()->Data?) async {
-        if !peersConnection.sendable.isEmpty,
-           let data = getData() {
-            await peersConnection.broadcastData(data)
+    
+    public func setDelegate(_ delegate: PeersDelegate, for framerType: FramerType) {
+        if connections.delegates[framerType] != nil {
+            connections.delegates[framerType]?.append(delegate)
+        } else {
+            connections.delegates[framerType] = [delegate]
         }
-
     }
-
-
-
+    
+    public func removeDelegate(_ delegate: PeersDelegate) {
+        for (key, var delegates) in connections.delegates {
+            delegates.removeAll { $0 === delegate }
+            connections.delegates[key] = delegates
+        }
+    }
+    
+    public func sendItem(_ framerType: FramerType,
+                         _ getData: ()->Data?) async {
+        if connections.sendable.count > 0,
+           let data = getData() {
+            await connections.broadcastData(framerType,data)
+        }
+        
+    }
 }

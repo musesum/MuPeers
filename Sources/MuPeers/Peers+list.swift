@@ -6,7 +6,7 @@ extension Peers { // list
 
     func listHandshake(_ status: [HandshakeStatus]) -> String {
         var ret: String = ""
-        for (id, handshake) in peersConnection.handshaking {
+        for (id, handshake) in connections.handshaking {
             if status.contains(handshake.status) {
                 ret += "\(id): \(handshake.status.description)\n"
             }
@@ -16,7 +16,7 @@ extension Peers { // list
 
     func listConnected() -> String {
         var ret = ""
-        for peerId in peersConnection.connections.keys {
+        for peerId in connections.nwConnect.keys {
             ret += "\(peerId)\n"
         }
         if ret.count > 0 {

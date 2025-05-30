@@ -4,64 +4,64 @@ import Foundation
 import Network
 import UIKit
 
-final class PeerListener: @unchecked Sendable {
+final class PeersListener: @unchecked Sendable {
 
     let peerId: PeerId
-    let peerLog: PeerLog
-    let peerConnection: PeerConnection
-    let peerConfig: PeerConfig
+    let peersLog: PeersLog
+    let peersConnection: PeersConnection
+    let peersConfig: PeersConfig
     var listener: NWListener?
 
     init(_ peerId: PeerId,
-         _ peerLog: PeerLog,
-         _ peerConfig: PeerConfig,
-         _ peerConnection: PeerConnection) {
+         _ peersLog: PeersLog,
+         _ peersConfig: PeersConfig,
+         _ peersConnection: PeersConnection) {
 
         self.peerId = peerId
-        self.peerLog = peerLog
-        self.peerConnection = peerConnection
-        self.peerConfig = peerConfig
+        self.peersLog = peersLog
+        self.peersConnection = peersConnection
+        self.peersConfig = peersConfig
         setupListener()
     }
     
     func setupListener() {
         do {
-            let parameters = NWParameters.make(secret: peerConfig.secret)
+            let parameters = NWParameters.make(secret: peersConfig.secret)
             listener = try NWListener(using: parameters, on: .any)
             if let listener {
-                listener.service = NWListener.Service(name: peerId, type: peerConfig.service)
-                listener.newConnectionHandler = { [weak peerConnection = self.peerConnection] connection in
-                    guard let peerConnection else { return }
-                    peerConnection.setupConnection(connection)
+                listener.service = NWListener.Service(name: peerId, type: peersConfig.service)
+                listener.newConnectionHandler = { [weak peersConnection = self.peersConnection] connection in
+                    guard let peersConnection else { return }
+                    peersConnection.setupConnection(connection)
                 }
             }
             startListening()
         } catch {
-            peerLog.log("Listener error: \(error)")
+            peersLog.log("Listener error: \(error)")
             abort()
         }
     }
     func startListening() {
         guard let listener else { return }
-        let peerLog = self.peerLog
+        let peersLog = self.peersLog
         listener.stateUpdateHandler = { [weak listener] state in
             guard let listener else { return }
             switch state {
             case .ready:
                 let port = listener.port ?? 0
-                peerLog.status("👂listening port: \(port)")
+                peersLog.status("👂listening port: \(port)")
             case .failed(let error):
                 if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_DefunctConnection)) {
-                    peerLog.log("Listener failed with \(error), restarting")
+                    peersLog.log("Listener failed with \(error), restarting")
                     listener.cancel()
                     self.setupListener()
                     
                 } else {
-                    peerLog.log("advertise error: \(error)")
+                    peersLog.log("advertise error: \(error)")
                     listener.cancel()
                 }
             case .cancelled:
-                peerLog.log("Listener cancelled, stopping")
+                peersLog.log("Listener cancelled, stopping")
                 listener.cancel()
             default:
                 break

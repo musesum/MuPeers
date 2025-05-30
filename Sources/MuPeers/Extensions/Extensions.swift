@@ -3,38 +3,6 @@
 import Foundation
 import Network
 
-public extension Formatter {
-    static let number = NumberFormatter()
-}
-public extension FloatingPoint {
-
-    func digits(_ range: Int) -> String {
-
-        if range == 0 {
-            Formatter.number.maximumFractionDigits = 0
-            Formatter.number.numberStyle = .decimal
-            Formatter.number.roundingMode = .down  // Ensure truncation
-            Formatter.number.usesGroupingSeparator = false
-            let str = Formatter.number.string(for: self) ?? ""
-            return str
-        }
-        let lower: Int
-        let minus: Bool
-        if range < 0 {
-            lower = -range
-            minus = true
-        } else {
-            lower = range
-            minus = false
-        }
-        Formatter.number.roundingMode = NumberFormatter.RoundingMode.halfEven
-        Formatter.number.minimumFractionDigits = lower
-        Formatter.number.maximumFractionDigits = lower
-        Formatter.number.usesGroupingSeparator = false
-        let str = Formatter.number.string(for:  self) ?? ""
-        return minus && self < 0 ? str : " " + str
-    }
-}
 extension String {
     var endpointType: EndpointType {
         if self.prefix(1) == PeersPrefix {

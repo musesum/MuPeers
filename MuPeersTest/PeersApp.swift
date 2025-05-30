@@ -4,27 +4,29 @@ import SwiftUI
 import UIKit
 
 @main
-struct PeersApp: App {
+struct PeersTestApp: App {
 
     let peers = Peers(
-        PeerConfig(service: "_mupeers._tcp", // see info.plist
-                   secret: "")) // shared secret - change this!
+        // see info.plist for _mupeers._tcp
+        // set secret to "" if you want to send in the clear,
+        // which seems to avoid some ssl issues
+        PeersConfig(service: "_mupeers._tcp",
+                    secret: "your-secret-here"))
 
     var body: some Scene {
         WindowGroup {
-            PeersView(peers)
+            PeersTestView(peers)
         }
     }
 }
-
-struct PeersView: View {
+public struct PeersTestView: View {
 
     let peers: Peers
-    init(_ peers: Peers) {
+    public init(_ peers: Peers) {
         self.peers = peers
     }
 
-    var body: some View {
+    public var body: some View {
         VStack ( alignment: .leading){
             HStack {
                 Image(systemName: "globe")
@@ -35,9 +37,8 @@ struct PeersView: View {
             Text("")
             Text(peers.listPeerStatus())
             Text(peers.listConnected())
-            Text(peers.listHandshake(.inviting))
-            Text(peers.listHandshake(.accepting))
-            Text(peers.listHandshake(.verified))
+            Text("–– handshake ––")
+            Text(peers.listHandshake([.accepting,.verified]))
         }
         .padding()
     }

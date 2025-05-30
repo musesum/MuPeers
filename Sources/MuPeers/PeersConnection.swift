@@ -3,45 +3,37 @@
 import Foundation
 import Network
 
-class PeerConnection: @unchecked Sendable {
+class PeersConnection: @unchecked Sendable {
 
     let peerId: PeerId
-    let peerLog: PeerLog
-    let peerConfig: PeerConfig
+    let peersLog: PeersLog
+    let peersConfig: PeersConfig
 
     var connections: [PeerId: NWConnection] = [:]
     var handshaking: [PeerId: PeerHandshake] = [:]
+    var sendable   : Set<PeerId> = []
+    var delegates: [String: PeersDelegate] = [:]
 
     init(_ peerId: PeerId,
-         _ peerLog: PeerLog,
-         _ peerConfig: PeerConfig) {
+         _ peersLog: PeersLog,
+         _ peersConfig: PeersConfig) {
 
         self.peerId = peerId
-        self.peerLog = peerLog
-        self.peerConfig = peerConfig
+        self.peersLog = peersLog
+        self.peersConfig = peersConfig
     }
 
-    // Send a message to all connected peers
-    func broadcastMessage(_ message: String) async {
-        for (connectId, connection) in connections {
-            if connectId == self.peerId {
-                peerLog.status("🙊 broadcast to self skipped")
-            } else {
-                self.sendMessage(connectId, connection, message, .data)
-            }
-        }
-    }
     func sendHandshake(_ connectId: PeerId,
                        _ connection: NWConnection?,
                        _ handshake: HandshakeStatus,
                        _ framerType: PeerFramerType = .handshake) {
 
         guard let connection = self.connections[connectId] ?? connection else {
-            return peerLog.status("⚠️ handshake connection not found for \(connectId)")
+            return peersLog.status("⚠️ handshake connection not found for \(connectId)")
         }
 
         guard let data = try? JSONEncoder().encode(HandshakeMessage(peerId, handshake)) else {
-            return peerLog.status("⚠️ handshake encoding error")
+            return peersLog.status("⚠️ handshake encoding error")
         }
         let message = NWProtocolFramer.Message(peerMessageType: .handshake)
         let context = NWConnection.ContentContext(identifier: framerType.description, metadata: [message])
@@ -50,25 +42,59 @@ class PeerConnection: @unchecked Sendable {
                         contentContext: context,
                         isComplete: true,
                         completion: .contentProcessed { error in
+            #if DEBUG
             if let error {
-                self.peerLog.log("🚨 handshake \(connectId)  error: \(error)")
+                self.peersLog.log("🚨 handshake \(connectId)  error: \(error)")
             } else {
-                self.peerLog.status("📤 handshake \(connectId):  '\(handshake.description)'")
+                self.peersLog.status("📤 handshake \(connectId):  '\(handshake.description)'")
             }
+            #endif
         })
         handshaking[connectId] = PeerHandshake(handshake)
     }
+    // Send a message to all connected peers
+    func broadcastData(_ data: Data) async {
+        for peerId in sendable {
+            self.sendData(peerId, data)
+        }
+    }
+    func sendData(_ connectId: PeerId,
+                  _ data: Data) {
+
+        guard let connection = self.connections[connectId] else {
+            return peersLog.status("⚠️ Connection not found for \(connectId)")
+        }
+
+        let message = NWProtocolFramer.Message(peerMessageType: .data)
+        let context = NWConnection.ContentContext(identifier: "PeerMessage", metadata: [message])
+
+        connection.send(content: data,
+                        contentContext: context,
+                        isComplete: true,
+                        completion: .contentProcessed { error in
+
+            if let error {
+                self.peersLog.log("🚨 sendMessage \(connectId): \(error)")
+            } else {
+                #if DEBUG
+                self.peersLog.status("📤 sendMessage \(connectId)")
+                #endif
+            }
+
+        })
+    }
+
     func sendMessage(_ connectId: PeerId,
                      _ connection: NWConnection?,
                      _ message: String,
                      _ messageType: PeerFramerType) {
 
         guard let connection = self.connections[connectId] ?? connection else {
-            return peerLog.status("⚠️ Connection not found for \(connectId)")
+            return peersLog.status("⚠️ Connection not found for \(connectId)")
         }
         let peerMessage = PeerMessage(peerId, message)
         guard let data = try? JSONEncoder().encode(peerMessage) else {
-            return peerLog.status("⚠️ Encoding error")
+            return peersLog.status("⚠️ Encoding error")
         }
 
         let message = NWProtocolFramer.Message(peerMessageType: messageType)
@@ -79,9 +105,11 @@ class PeerConnection: @unchecked Sendable {
                         isComplete: true,
                         completion: .contentProcessed { error in
             if let error {
-                self.peerLog.log("🚨 sendMessage \(connectId): \(error)")
+                self.peersLog.log("🚨 sendMessage \(connectId): \(error)")
             } else {
-                self.peerLog.status("📤 sendMessage \(connectId): '\(peerMessage.text)'")
+                #if DEBUG
+                self.peersLog.status("📤 sendMessage \(connectId): '\(peerMessage.text)'")
+                #endif
             }
         })
     }
@@ -90,7 +118,7 @@ class PeerConnection: @unchecked Sendable {
     func setupConnection(_ connection: NWConnection) {
         let connectId = connection.endpoint.peerId
         if connections.keys.contains(connectId) { return }
-        peerLog.status("🔗 connect:  \(connectId)")
+        peersLog.status("🔗 connect:  \(connectId)")
         connections[connectId] = connection
         receive(on: connection)
         connection.start(queue: .main)
@@ -112,10 +140,10 @@ class PeerConnection: @unchecked Sendable {
 
                 let messageType = message.peerMessageType
                 switch messageType {
-                case .handshake: self.updateHandshake(connection, data)
-                case .data:    log("<= data")
-                case .alive:   log("<= alive")
-                case .invalid: log("<= invalid")
+                case .handshake : self.updateHandshake(connection, data)
+                case .data      : self.updateData(connection, data)
+                case .alive     : log("<= alive")
+                case .invalid   : log("<= invalid")
                 }
             } else {
                 return err("missing framer metadata")
@@ -127,10 +155,18 @@ class PeerConnection: @unchecked Sendable {
             print("<= \(msg) ")
         }
         @Sendable func err(_ msg: String) {
-            peerLog.log("⚠️ receive " + msg)
+            peersLog.log("⚠️ receive " + msg)
         }
     }
 
+    func updateData(_ connection: NWConnection,
+                    _ data: Data) {
+
+        for delegate in delegates.values {
+            delegate.received(data: data)
+        }
+
+    }
     func updateHandshake(_ connection: NWConnection,
                          _ data: Data) {
 
@@ -145,10 +181,15 @@ class PeerConnection: @unchecked Sendable {
         case .verified:  handshaking[connectId] = PeerHandshake(.verified)
         default: break
         }
+
+        switch message.status {
+        case .accepting, .verified: sendable.insert(connectId)
+        default: break
+        }
     }
 
     func refreshResults(_ results: Set<NWBrowser.Result>) {
-        peerLog.log("🔁 refreshResults")
+        peersLog.log("🔁 refreshResults")
 
         var refreshedConnections: Set<PeerId> = []
 
@@ -159,7 +200,7 @@ class PeerConnection: @unchecked Sendable {
                 refreshedConnections.insert(connectId)
 
                 if !connections.keys.contains(connectId) {
-                    let parameters = NWParameters.make(secret: peerConfig.secret)
+                    let parameters = NWParameters.make(secret: peersConfig.secret)
                     let connection = NWConnection(to: result.endpoint, using: parameters)
                     setupConnection(connection)
                 }
@@ -167,7 +208,7 @@ class PeerConnection: @unchecked Sendable {
         }
         let removeConnections = Set(connections.keys).subtracting(refreshedConnections)
         for removeId in removeConnections {
-            peerLog.status("⛓️‍💥 disconnect: \(removeId)")
+            peersLog.status("⛓️‍💥 disconnect: \(removeId)")
             if let connection = connections[removeId] {
                 connection.cancel()
             }
@@ -176,7 +217,7 @@ class PeerConnection: @unchecked Sendable {
         }
     }
 }
-extension PeerConnection {
+extension PeersConnection {
 
     func sendInvite(_ connection: NWConnection) {
         let connectId = connection.endpoint.peerId
@@ -200,7 +241,7 @@ extension PeerConnection {
 
         } else {
             handshaking[connectId] = PeerHandshake(.awaiting)
-            peerLog.status("🔗 awaiting: \(connectId)")
+            peersLog.status("🔗 awaiting: \(connectId)")
         }
     }
 

@@ -6,37 +6,54 @@ import SwiftUI
 
 let PeersPrefix: String = "☯︎"
 
-struct PeerConfig {
+public struct PeersConfig {
     let service: String
     let secret: String
-
-    init(service: String,
-         secret: String) {
-
+    
+    public init(service: String,
+                secret: String) {
+        
         self.service = service
         self.secret = secret
     }
 }
 
-class Peers {
+public class Peers {
 
-    let peerConfig: PeerConfig
-    let peerBrowser: PeerBrowser
-    let peerListener: PeerListener
-    let peerConnection: PeerConnection
+    let peersConfig: PeersConfig
+    let peersBrowser: PeersBrowser
+    let peersListener: PeersListener
+    let peersConnection: PeersConnection
     let peerIdNumber: UInt64
-    let peerId: String
-    let peerLog: PeerLog
-    var delegates: [String: PeersDelegate] = [:]
+    let peersLog: PeersLog
 
-    init(_ config: PeerConfig) {
+    public let peerId: String
 
-        peerConfig     = config
-        peerIdNumber   = UInt64.random(in: 1...UInt64.max)
-        peerId         = PeersPrefix + peerIdNumber.base32
-        peerLog        = PeerLog       (peerId)
-        peerConnection = PeerConnection(peerId, peerLog, peerConfig)
-        peerListener   = PeerListener  (peerId, peerLog, peerConfig, peerConnection)
-        peerBrowser    = PeerBrowser   (peerId, peerLog, peerConfig, peerConnection)
+    public init(_ config: PeersConfig) {
+
+        peersConfig     = config
+        peerIdNumber    = UInt64.random(in: 1...UInt64.max)
+        peerId          = PeersPrefix + peerIdNumber.base32
+        peersLog        = PeersLog       (peerId)
+        peersConnection = PeersConnection(peerId, peersLog, peersConfig)
+        peersListener   = PeersListener  (peerId, peersLog, peersConfig, peersConnection)
+        peersBrowser    = PeersBrowser   (peerId, peersLog, peersConfig, peersConnection)
     }
+
+    public func setDelegate(_ delegate: PeersDelegate, for peerId: String) {
+        peersConnection.delegates[peerId] = delegate
+    }
+    public func removeDelegate(_ peerId: String) {
+        peersConnection.delegates.removeValue(forKey: peerId)
+    }
+    public func sendItem(_ getData: ()->Data?) async {
+        if !peersConnection.sendable.isEmpty,
+           let data = getData() {
+            await peersConnection.broadcastData(data)
+        }
+
+    }
+
+
+
 }

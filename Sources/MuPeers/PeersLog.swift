@@ -4,7 +4,7 @@ import SwiftUI
 import Network
 
 @Observable
-class PeerLog: @unchecked Sendable {
+class PeersLog: @unchecked Sendable {
 
     let peerId: String // my PeerId
     var status: [String] = ["🎬 Action!"]
@@ -21,6 +21,8 @@ class PeerLog: @unchecked Sendable {
         log(message)
     }
     func log(_ message: String)  {
+        #if DEBUG
         print("\(peerId): \(message)")
+        #endif
     }
 }

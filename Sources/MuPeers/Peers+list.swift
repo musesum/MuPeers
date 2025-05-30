@@ -4,24 +4,19 @@ import Foundation
 
 extension Peers { // list
 
-    func listHandshake(_ status: HandshakeStatus) -> String {
+    func listHandshake(_ status: [HandshakeStatus]) -> String {
         var ret: String = ""
-        let time = Date().timeIntervalSince1970
-
-        for (id, handshake) in peerConnection.handshaking {
-            if handshake.status != status { continue }
-            let delta = time - handshake.time
-            ret += "\(id): \(delta.digits(1)) sec\n"
-        }
-        if ret.count > 0 {
-            ret = "–– \(status.description) ––\n" + ret
+        for (id, handshake) in peersConnection.handshaking {
+            if status.contains(handshake.status) {
+                ret += "\(id): \(handshake.status.description)\n"
+            }
         }
         return ret
     }
 
     func listConnected() -> String {
         var ret = ""
-        for peerId in peerConnection.connections.keys {
+        for peerId in peersConnection.connections.keys {
             ret += "\(peerId)\n"
         }
         if ret.count > 0 {
@@ -32,12 +27,44 @@ extension Peers { // list
 
     func listPeerStatus() -> String {
         var ret = ""
-        for status in peerLog.status {
+        for status in peersLog.status {
             ret += "\(status)\n"
         }
         if ret.count > 0 {
             ret = "–– status ––\n" + ret
         }
         return ret
+    }
+}
+extension Formatter {
+    static let number = NumberFormatter()
+}
+extension FloatingPoint {
+
+    func digits(_ range: Int) -> String {
+
+        if range == 0 {
+            Formatter.number.maximumFractionDigits = 0
+            Formatter.number.numberStyle = .decimal
+            Formatter.number.roundingMode = .down  // Ensure truncation
+            Formatter.number.usesGroupingSeparator = false
+            let str = Formatter.number.string(for: self) ?? ""
+            return str
+        }
+        let lower: Int
+        let minus: Bool
+        if range < 0 {
+            lower = -range
+            minus = true
+        } else {
+            lower = range
+            minus = false
+        }
+        Formatter.number.roundingMode = NumberFormatter.RoundingMode.halfEven
+        Formatter.number.minimumFractionDigits = lower
+        Formatter.number.maximumFractionDigits = lower
+        Formatter.number.usesGroupingSeparator = false
+        let str = Formatter.number.string(for:  self) ?? ""
+        return minus && self < 0 ? str : " " + str
     }
 }

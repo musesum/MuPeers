@@ -4,16 +4,16 @@ import Foundation
 
 public enum HandshakeStatus: Int, Codable, @unchecked Sendable {
     case inviting
-    case awaiting
+    case awaitng
     case accepting
     case verified
 
     var description: String {
         switch self {
-        case .inviting:  return "inviting"
-        case .awaiting:  return "awaiting"
-        case .accepting: return "accepting"
-        case .verified:  return "verified"
+        case .inviting  : return "inviting"
+        case .awaitng   : return "awaiting"
+        case .accepting : return "accepting"
+        case .verified  : return "verified"
         }
     }
 }

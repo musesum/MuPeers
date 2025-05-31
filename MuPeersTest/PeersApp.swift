@@ -11,7 +11,7 @@ struct PeersTestApp: App {
         // set secret to "" if you want to send in the clear,
         // which seems to avoid some ssl issues
         PeersConfig(service: "_mupeers._tcp",
-                    secret: "your-secret-here"))
+                    secret: "")) // "your-secret-here"
 
     var body: some Scene {
         WindowGroup {

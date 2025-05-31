@@ -8,18 +8,18 @@ final class PeersListener: @unchecked Sendable {
 
     let peerId: PeerId
     let peersLog: PeersLog
-    let peersConnection: PeersConnection
+    let connections: PeersConnection
     let peersConfig: PeersConfig
     var listener: NWListener?
 
     init(_ peerId: PeerId,
          _ peersLog: PeersLog,
          _ peersConfig: PeersConfig,
-         _ peersConnection: PeersConnection) {
+         _ connections: PeersConnection) {
 
         self.peerId = peerId
         self.peersLog = peersLog
-        self.peersConnection = peersConnection
+        self.connections = connections
         self.peersConfig = peersConfig
         setupListener()
     }
@@ -30,9 +30,9 @@ final class PeersListener: @unchecked Sendable {
             listener = try NWListener(using: parameters, on: .any)
             if let listener {
                 listener.service = NWListener.Service(name: peerId, type: peersConfig.service)
-                listener.newConnectionHandler = { [weak peersConnection = self.peersConnection] connection in
-                    guard let peersConnection else { return }
-                    peersConnection.setupConnection(connection)
+                listener.newConnectionHandler = { [weak connections = self.connections] connection in
+                    guard let connections else { return }
+                    connections.setupConnection(connection)
                 }
             }
             startListening()

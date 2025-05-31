@@ -64,7 +64,7 @@ class PeerFramer: NWProtocolFramerImplementation {
                       isComplete: Bool) {
 
         let type = message.framerType
-        let header = PeerProtocolHeader(type: type.rawValue, length: UInt32(messageLength))
+        let header = PeerFramerHeader(type: type.rawValue, length: UInt32(messageLength))
         
         framer.writeOutput(data: header.encodedData)
 
@@ -77,15 +77,15 @@ class PeerFramer: NWProtocolFramerImplementation {
 
     func handleInput(framer: Framer) -> Int {
         while true {
-            var tempHeader: PeerProtocolHeader? = nil
-            let headerSize = PeerProtocolHeader.encodedSize
+            var tempHeader: PeerFramerHeader? = nil
+            let headerSize = PeerFramerHeader.encodedSize
             //print("⟸ headerSize: \(headerSize)")
             let parsed = framer.parseInput(
                 minimumIncompleteLength: headerSize,
                 maximumLength: headerSize) { (buffer, isComplete) -> Int in
                     guard let buffer else { return 0 }
                     if buffer.count < headerSize { return 0 }
-                    tempHeader = PeerProtocolHeader(buffer)
+                    tempHeader = PeerFramerHeader(buffer)
                     return headerSize
                 }
 
@@ -119,47 +119,3 @@ extension NWProtocolFramer.Message {
     }
 }
 
-/// header of two UInt32 for `type`, `length`
-struct PeerProtocolHeader: Codable {
-    let type: UInt32
-    let length: UInt32
-
-    init(type: UInt32, length: UInt32) {
-        self.type = type
-        self.length = length
-    }
-
-    // create type,length buffer of 2 UInt32s
-    init(_ buffer: UnsafeMutableRawBufferPointer) {
-        var tempType: UInt32 = 0
-        var tempLength: UInt32 = 0
-        let UInt32Size = MemoryLayout<UInt32>.size
-
-        withUnsafeMutableBytes(of: &tempType) { typePtr in
-            typePtr.copyMemory(from: UnsafeRawBufferPointer(
-                start: buffer.baseAddress!.advanced(by: 0),
-                count: UInt32Size))
-        }
-        withUnsafeMutableBytes(of: &tempLength) { lengthPtr in
-            lengthPtr.copyMemory(from: UnsafeRawBufferPointer(
-                start: buffer.baseAddress!.advanced(by: UInt32Size),
-                count: UInt32Size))
-        }
-        type = tempType
-        length = tempLength
-    }
-
-    var encodedData: Data {
-        var tempType = type
-        var tempLength = length
-        let UInt32Size = MemoryLayout<UInt32>.size
-        var data = Data(bytes: &tempType, count: UInt32Size)
-        data.append(Data(bytes: &tempLength, count: UInt32Size))
-        return data
-    }
-
-    static var encodedSize: Int {
-        let UInt32Size = MemoryLayout<UInt32>.size
-        return UInt32Size * 2 // type, length
-    }
-}

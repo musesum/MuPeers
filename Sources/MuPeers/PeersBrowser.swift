@@ -9,17 +9,17 @@ class PeersBrowser: @unchecked Sendable {
 
     let peerId: PeerId
     let peersLog: PeersLog
-    let peersConnection: PeersConnection
+    let connections: PeersConnection
     let peersConfig: PeersConfig
 
     init(_ peerId: PeerId,
          _ peersLog: PeersLog,
          _ peersConfig: PeersConfig,
-         _ peersConnection: PeersConnection) {
+         _ connections: PeersConnection) {
 
         self.peerId = peerId
         self.peersLog = peersLog
-        self.peersConnection = peersConnection
+        self.connections = connections
         self.peersConfig = peersConfig
         setupBrowser()
     }
@@ -33,7 +33,7 @@ class PeersBrowser: @unchecked Sendable {
                 self.browserStateUpdateHandler(browser, newState)
             }
             browser.browseResultsChangedHandler = { results, _ in
-                self.peersConnection.refreshResults(results)
+                self.connections.refreshResults(results)
             }
             browser.start(queue: .main)
             peersLog.status("🔍 Browsing for peers")
@@ -54,9 +54,9 @@ class PeersBrowser: @unchecked Sendable {
             }
         case .ready:
             // Post initial results.
-            peersConnection.refreshResults(browser.browseResults)
+            connections.refreshResults(browser.browseResults)
         case .cancelled:
-            peersConnection.refreshResults(Set())
+            connections.refreshResults(Set())
         default:
             break
         }

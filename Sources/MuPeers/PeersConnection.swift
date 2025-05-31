@@ -65,7 +65,7 @@ class PeersConnection: @unchecked Sendable {
                   _ data: Data) {
 
         guard let connection = self.nwConnect[connectId] else {
-            return peersLog.status("⚠️ Connection not found for \(connectId)")
+            return //..... crash: peersLog.status("⚠️ Connection not found for \(connectId)")
         }
 
         let message = NWProtocolFramer.Message(framerType: framerType)
@@ -83,7 +83,6 @@ class PeersConnection: @unchecked Sendable {
                 self.peersLog.status("📤 sendMessage \(connectId)")
                 #endif
             }
-
         })
     }
 
@@ -176,7 +175,7 @@ class PeersConnection: @unchecked Sendable {
 
         // Decode the message data
         guard let message = try? JSONDecoder().decode(HandshakeMessage.self, from: data) else {
-            return //.... err("Decoding error")
+            return peersLog.log("🚨 Decoding error")
         }
         let connectId = message.peerId
         switch message.status {

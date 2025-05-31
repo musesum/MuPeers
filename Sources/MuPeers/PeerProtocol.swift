@@ -5,7 +5,10 @@ import Network
 
 typealias Framer = NWProtocolFramer.Instance
 
-// types of messages for PeerFramer
+/// types of messages for PeerFramer will determine
+/// which delegate in which to dispatch the data.
+/// handshake is unique in that it will determine
+/// whether a peerId has been accepted from both sides.
 public enum FramerType: UInt32 {
     case invalid
     case handshake  // verify / manage peers
@@ -14,7 +17,6 @@ public enum FramerType: UInt32 {
     case touch      // touch / draw
     case menu       // menu selection
     case hand       // hand pose
-
 
     var description: String {
         switch self {
@@ -25,7 +27,6 @@ public enum FramerType: UInt32 {
         case .touch     : return "touch"
         case .menu      : return "menu"
         case .hand      : return "hand"
-
         }
     }
     /// this is a placeholder, no way to select

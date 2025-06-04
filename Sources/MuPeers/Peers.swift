@@ -50,7 +50,8 @@ public class Peers {
             connections.delegates[key] = delegates
         }
     }
-    
+
+    // make sure there is a connection before the expense of encoding the message
     public func sendItem(_ framerType: FramerType,
                          _ getData: ()->Data?) async {
         if connections.sendable.count > 0,

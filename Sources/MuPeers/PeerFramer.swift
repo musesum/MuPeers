@@ -12,21 +12,21 @@ typealias Framer = NWProtocolFramer.Instance
 public enum FramerType: UInt32 {
     case invalid
     case handshake  // verify / manage peers
-    case data       // Generic Data, usually Codable
-    case midi       // midi message
-    case touch      // touch / draw
-    case menu       // menu selection
-    case hand       // hand pose
+    case dataFrame  // Generic Data, usually Codable
+    case midiFrame  // midi message
+    case touchFrame // touch / draw
+    case menuFrame  // menu selection
+    case handFrame  // hand pose
 
     var description: String {
         switch self {
-        case .invalid   : return "invalid"
-        case .handshake : return "handshake"
-        case .data      : return "data"
-        case .midi      : return "midi"
-        case .touch     : return "touch"
-        case .menu      : return "menu"
-        case .hand      : return "hand"
+        case .invalid    : return "invalid"
+        case .handshake  : return "handshake"
+        case .dataFrame  : return "data"
+        case .midiFrame  : return "midi"
+        case .touchFrame : return "touch"
+        case .menuFrame  : return "menu"
+        case .handFrame  : return "hand"
         }
     }
     /// this is a placeholder, no way to select
@@ -35,13 +35,13 @@ public enum FramerType: UInt32 {
     /// should have their own framer
     var serviceClass: NWParameters.ServiceClass {
         switch self {
-        case .invalid   : return .background
-        case .handshake : return .signaling
-        case .data      : return .responsiveData
-        case .midi      : return .responsiveData
-        case .touch     : return .responsiveData
-        case .menu      : return .responsiveData
-        case .hand      : return .responsiveData
+        case .invalid    : return .background
+        case .handshake  : return .signaling
+        case .dataFrame  : return .responsiveData
+        case .midiFrame  : return .responsiveData
+        case .touchFrame : return .responsiveData
+        case .menuFrame  : return .responsiveData
+        case .handFrame  : return .responsiveData
         }
     }
 }

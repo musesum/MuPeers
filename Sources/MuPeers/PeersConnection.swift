@@ -69,7 +69,7 @@ class PeersConnection: @unchecked Sendable {
             if let error {
                 self.peersLog.log("🚨 send '\(text)' to \(connectId) \(error)")
                 // Remove connection if socket is disconnected
-                if case .posix(let code) = error as? NWError, code == .ENOTCONN {
+                if case .posix(let code) = error, code == .ENOTCONN {
                     self.handleDisconnection(connectId)
                 }
             } else {

@@ -38,7 +38,6 @@ final class PeersListener: @unchecked Sendable {
             startListening()
         } catch {
             peersLog.log("Listener error: \(error)")
-            abort()
         }
     }
     func startListening() {

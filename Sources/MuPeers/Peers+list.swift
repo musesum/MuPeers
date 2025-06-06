@@ -13,6 +13,16 @@ extension Peers { // list
         }
         return ret
     }
+    
+    func getVerifiedPeerIds() -> Set<String> {
+        var verifiedPeers: Set<String> = []
+        for (id, handshake) in connections.handshaking {
+            if handshake.status == .verified {
+                verifiedPeers.insert(id)
+            }
+        }
+        return verifiedPeers
+    }
 
     func listConnected() -> String {
         var ret = ""

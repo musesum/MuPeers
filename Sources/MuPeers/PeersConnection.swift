@@ -12,6 +12,8 @@ class PeersConnection: @unchecked Sendable {
     var handshaking : [PeerId: PeerHandshake] = [:]
     var sendable    : Set<PeerId> = Set()
     var delegates   : [FramerType: [PeersDelegate]] = [:]
+    var connectionKeys : [ObjectIdentifier: PeerId] = [:] // Track current key for each connection
+    var lastActivity : [PeerId: Date] = [:] // Track last activity for each peer
 
     init(_ peerId: PeerId,
          _ peersLog: PeersLog,
@@ -26,13 +28,13 @@ class PeersConnection: @unchecked Sendable {
                        _ nwConnect: NWConnection,
                        _ handshake: HandshakeStatus) {
 
-        let connectId = nwConnect.endpoint.peerId
+        // Use the passed connectId, not the endpoint's peerId, as it may have been transferred
         guard let data = try? JSONEncoder().encode(HandshakeMessage(peerId, handshake)) else {
             return peersLog.status("⚠️ handshake encoding error")
         }
         // cannot filter for connectId.hasPrefix(PeersPrefix)
-        // seems that invite needs to start is IPv6, which in turn
-        // disconnects once the Bounjour service takes over -- weird
+        // seems like invite starts from IPv6, which in turn
+        // disconnects once the Bounjour service takes over?
         sendData(.handshake, connectId, data, handshake.description)
 
     }
@@ -50,12 +52,18 @@ class PeersConnection: @unchecked Sendable {
                   _ text: String = "") {
 
         guard let connection = self.nwConnect[connectId] else {
-            return peersLog.status("⚠️ send '\(text)' to \(connectId) Connection not found")
+            peersLog.status("⚠️ send '\(text)' to \(connectId) Connection not found")
+            sendable.remove(connectId)
+            return
         }
         
         // Check connection state before sending
         guard connection.state == .ready else {
-            return peersLog.status("⚠️ send '\(text)' to \(connectId) Connection not ready: \(connection.state)")
+            peersLog.status("⚠️ send '\(text)' to \(connectId) Connection not ready: \(connection.state)")
+            if case .failed(_) = connection.state {
+                sendable.remove(connectId)
+            }
+            return
         }
 
         let message = NWProtocolFramer.Message(framerType: framerType)
@@ -69,12 +77,13 @@ class PeersConnection: @unchecked Sendable {
             if let error {
                 self.peersLog.log("🚨 send '\(text)' to \(connectId) \(error)")
                 // Remove connection if socket is disconnected
-                if case .posix(let code) = error, code == .ENOTCONN {
+                if case .posix(let code) = error, 
+                   code == .ENOTCONN || code == .ECONNRESET {
                     self.handleDisconnection(connectId)
                 }
             } else {
                 #if DEBUG
-                self.peersLog.status("📤 send '\(text)' to \(connectId)")
+                //self.peersLog.status("📤 send '\(text)' to \(connectId)")
                 #endif
             }
         })
@@ -114,9 +123,26 @@ class PeersConnection: @unchecked Sendable {
     func setupConnection(_ connection: NWConnection) {
 
         let connectId = connection.endpoint.peerId
-        if nwConnect.keys.contains(connectId) { return }
+        
+        // If we already have a connection to this peer, check its state
+        if let existingConnection = nwConnect[connectId] {
+            switch existingConnection.state {
+            case .ready, .preparing, .setup:
+                // Existing connection is still viable, skip this new one
+                peersLog.status("⚠️ duplicate connection attempt to \(connectId), keeping existing")
+                connection.cancel()
+                return
+            default:
+                // Existing connection is dead, remove it first
+                peersLog.status("🔄 replacing dead connection to \(connectId)")
+                handleDisconnection(connectId)
+            }
+        }
+        
         peersLog.status("🔗 connect:  \(connectId)")
         nwConnect[connectId] = connection
+        connectionKeys[ObjectIdentifier(connection)] = connectId
+        lastActivity[connectId] = Date()
 
         connection.stateUpdateHandler = { [weak self] state in
             guard let self = self else { return }
@@ -131,7 +157,7 @@ class PeersConnection: @unchecked Sendable {
 
             case .failed(let error):
                 self.peersLog.log("🚨 failed: \(connectId) \(error)")
-                //self.handleDisconnection(connectId)
+                self.handleDisconnection(connectId)
 
             case .cancelled:
                 self.peersLog.status("❌ cancelled: \(connectId)")
@@ -164,10 +190,16 @@ class PeersConnection: @unchecked Sendable {
             }
 
             if let message = context.protocolMetadata(definition: PeerFramer.definition) as? NWProtocolFramer.Message {
-                guard let connection = self.nwConnect[endpoint.peerId]
-                else { return log("🚨 receive from unknown connection \(endpoint.peerId)") }
+                // Find the current key for this connection (may have been transferred)
+                let currentKey = self.connectionKeys[ObjectIdentifier(connection)] ?? endpoint.peerId
+                guard self.nwConnect[currentKey] != nil
+                else { return log("🚨 receive from unknown connection \(currentKey) (original: \(endpoint.peerId))") }
 
                 let framerType = message.framerType
+                
+                // Update activity tracking
+                self.lastActivity[currentKey] = Date()
+                
                 switch framerType {
                 case .handshake : self.updateHandshake(connection, data)
                 case .invalid   : log("invalid")
@@ -204,11 +236,26 @@ class PeersConnection: @unchecked Sendable {
         guard let message = try? JSONDecoder().decode(HandshakeMessage.self, from: data) else {
             return peersLog.log("🚨 update Decoding error")
         }
-        let connectId = message.peerId
+        
+        let announcedPeerId = message.peerId
+        let currentKey = connection.endpoint.peerId
+        
+        // Consolidate IPv6 connection to peer ID if peer announces peer ID
+        var connectId = currentKey
+        if !currentKey.hasPrefix(PeersPrefix) && announcedPeerId.hasPrefix(PeersPrefix) {
+            transferConnection(from: currentKey, to: announcedPeerId, connection: connection)
+            connectId = announcedPeerId  // Use the new key for all subsequent operations
+        } else {
+            connectId = announcedPeerId
+        }
         switch message.status {
-        case .inviting:  sendHandshake(connectId, connection, .accepting)
-        case .accepting: sendHandshake(connectId, connection, .verified)
-        case .verified:  handshaking[connectId] = PeerHandshake(.verified)
+        case .inviting:  
+            sendHandshake(connectId, connection, .accepting)
+        case .accepting: 
+            sendHandshake(connectId, connection, .verified)
+            handshaking[connectId] = PeerHandshake(.verified)  // Mark this peer as verified too
+        case .verified:  
+            handshaking[connectId] = PeerHandshake(.verified)
         default: break
         }
 
@@ -250,10 +297,73 @@ class PeersConnection: @unchecked Sendable {
         peersLog.status("⛓️‍💥 disconnect: \(connectId)")
         if let connection = nwConnect[connectId] {
             connection.cancel()
+            connectionKeys.removeValue(forKey: ObjectIdentifier(connection))
         }
         nwConnect.removeValue(forKey: connectId)
         handshaking.removeValue(forKey: connectId)
         sendable.remove(connectId)
+        lastActivity.removeValue(forKey: connectId)
+    }
+    
+    func transferConnection(from oldKey: String, to newKey: String, connection: NWConnection) {
+        peersLog.status("🔄 transfer connection: \(oldKey) -> \(newKey)")
+        
+        // Transfer handshaking state
+        if let handshake = handshaking[oldKey] {
+            handshaking[newKey] = handshake
+            handshaking.removeValue(forKey: oldKey)
+        }
+        
+        // Transfer sendable status
+        if sendable.contains(oldKey) {
+            sendable.remove(oldKey)
+            sendable.insert(newKey)
+        }
+        
+        // Transfer connection reference
+        nwConnect[newKey] = connection
+        nwConnect.removeValue(forKey: oldKey)
+        
+        // Update reverse mapping
+        connectionKeys[ObjectIdentifier(connection)] = newKey
+        
+        // Transfer activity tracking
+        if let activity = lastActivity[oldKey] {
+            lastActivity[newKey] = activity
+            lastActivity.removeValue(forKey: oldKey)
+        }
+    }
+    
+    func cleanupStaleConnections(olderThan timeout: TimeInterval = 60) {
+        let cutoffTime = Date().addingTimeInterval(-timeout)
+        var staleConnections: [PeerId] = []
+        
+        for (peerId, lastSeen) in lastActivity {
+            // Only cleanup if both: older than timeout AND connection is not ready
+            if lastSeen < cutoffTime {
+                if let connection = nwConnect[peerId] {
+                    // Check if connection is actually dead
+                    switch connection.state {
+                    case .failed, .cancelled:
+                        staleConnections.append(peerId)
+                    case .ready, .preparing, .setup:
+                        // Connection is still alive, update activity to prevent cleanup
+                        lastActivity[peerId] = Date()
+                    default:
+                        // For waiting state, give it more time
+                        break
+                    }
+                } else {
+                    // No connection found, safe to cleanup
+                    staleConnections.append(peerId)
+                }
+            }
+        }
+        
+        for staleId in staleConnections {
+            peersLog.status("🧹 cleanup stale connection: \(staleId)")
+            handleDisconnection(staleId)
+        }
     }
 }
 extension PeersConnection {

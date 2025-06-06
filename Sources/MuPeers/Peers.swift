@@ -18,7 +18,7 @@ public struct PeersConfig {
     }
 }
 
-public class Peers {
+final public class Peers: Sendable {
 
     let browser: PeersBrowser
     let listener: PeersListener
@@ -53,11 +53,15 @@ public class Peers {
 
     // make sure there is a connection before the expense of encoding the message
     public func sendItem(_ framerType: FramerType,
-                         _ getData: ()->Data?) async {
+                         _ getData: @Sendable ()->Data?) async {
         if connections.sendable.count > 0,
            let data = getData() {
             await connections.broadcastData(framerType,data)
         }
         
+    }
+    
+    public func cleanupStaleConnections() {
+        connections.cleanupStaleConnections()
     }
 }

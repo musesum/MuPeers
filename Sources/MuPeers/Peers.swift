@@ -36,7 +36,9 @@ final public class Peers: Sendable {
         browser     = PeersBrowser   (peerId, peersLog, config, connections)
     }
     
-    public func setDelegate(_ delegate: PeersDelegate, for framerType: FramerType) {
+    public func setDelegate(_ delegate: PeersDelegate,
+                            for framerType: FramerType) {
+        
         if connections.delegates[framerType] != nil {
             connections.delegates[framerType]?.append(delegate)
         } else {

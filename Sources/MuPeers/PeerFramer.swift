@@ -17,6 +17,7 @@ public enum FramerType: UInt32 {
     case touchFrame // touch / draw
     case menuFrame  // menu selection
     case handFrame  // hand pose
+    case archiveFrame // archive sharing
 
     var description: String {
         switch self {
@@ -27,6 +28,7 @@ public enum FramerType: UInt32 {
         case .touchFrame : return "touch"
         case .menuFrame  : return "menu"
         case .handFrame  : return "hand"
+        case .archiveFrame : return "archive"
         }
     }
     /// this is a placeholder, no way to select
@@ -42,6 +44,7 @@ public enum FramerType: UInt32 {
         case .touchFrame : return .responsiveData
         case .menuFrame  : return .responsiveData
         case .handFrame  : return .responsiveData
+        case .archiveFrame : return .responsiveData
         }
     }
 }

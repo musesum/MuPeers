@@ -21,7 +21,7 @@ final class PeersListener: @unchecked Sendable {
         self.peersLog = peersLog
         self.connections = connections
         self.peersConfig = peersConfig
-        setupListener()
+        //.... setupListener
     }
     
     func setupListener() {
@@ -40,6 +40,10 @@ final class PeersListener: @unchecked Sendable {
             peersLog.log("Listener error: \(error)")
         }
     }
+    func cancelListener() {
+        listener?.cancel()
+    }
+
     func startListening() {
         guard let listener else { return }
         let peersLog = self.peersLog

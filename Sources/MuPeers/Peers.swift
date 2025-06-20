@@ -3,6 +3,11 @@
 import Network
 import SwiftUI
 
+private actor ActiveState {
+    private var active = false
+    func get() -> Bool { active }
+    func set(_ value: Bool) { active = value }
+}
 
 let PeersPrefix: String = "☯︎"
 
@@ -26,7 +31,9 @@ final public class Peers: Sendable {
     let peersLog: PeersLog
     
     public let peerId: String
-    
+    private let activeState = ActiveState()
+
+
     public init(_ config: PeersConfig) {
 
         peerId      = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
@@ -35,7 +42,30 @@ final public class Peers: Sendable {
         listener    = PeersListener  (peerId, peersLog, config, connections)
         browser     = PeersBrowser   (peerId, peersLog, config, connections)
     }
-    
+    public func setupPeers() {
+
+        Task {
+            let isActive = await activeState.get()
+            if !isActive {
+                await activeState.set(true)
+                listener.setupListener()
+                browser.setupBrowser()
+            }
+        }
+    }
+    public func cancelPeers() {
+        Task {
+            let isActive = await activeState.get()
+            if isActive {
+                await activeState.set(false)
+                listener.cancelListener()
+                browser.cancelBrowser()
+            }
+        }
+    }
+    public func stopPeers() {
+        
+    }
     public func setDelegate(_ delegate: PeersDelegate,
                             for framerType: FramerType) {
         
@@ -67,3 +97,4 @@ final public class Peers: Sendable {
         connections.cleanupStaleConnections()
     }
 }
+

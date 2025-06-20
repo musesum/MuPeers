@@ -10,7 +10,7 @@ public struct PeersView: View {
     }
 
     public var body: some View {
-        VStack ( alignment: .leading) {
+        VStack (alignment: .leading) {
             Text(peers.listHandshake([.accepting,.verified]))
                 .padding()
         }

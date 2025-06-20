@@ -12,6 +12,8 @@ class PeersBrowser: @unchecked Sendable {
     let connections: PeersConnection
     let peersConfig: PeersConfig
 
+    var browser: NWBrowser?
+
     init(_ peerId: PeerId,
          _ peersLog: PeersLog,
          _ peersConfig: PeersConfig,
@@ -21,14 +23,15 @@ class PeersBrowser: @unchecked Sendable {
         self.peersLog = peersLog
         self.connections = connections
         self.peersConfig = peersConfig
-        setupBrowser()
+        //.... setupBrowser
     }
 
     // Start browsing for peers
     func setupBrowser() {
         do {
             let parameters = NWParameters.make(secret: peersConfig.secret)
-            let browser = NWBrowser(for: .bonjour(type: peersConfig.service, domain: nil), using: parameters)
+            self.browser = NWBrowser(for: .bonjour(type: peersConfig.service, domain: nil), using: parameters)
+            guard let browser else { return } //.... err?
             browser.stateUpdateHandler = { newState in
                 self.browserStateUpdateHandler(browser, newState)
             }
@@ -38,6 +41,9 @@ class PeersBrowser: @unchecked Sendable {
             browser.start(queue: .main)
             peersLog.status("🔍 Browsing for peers")
         }
+    }
+    func cancelBrowser() {
+        browser?.cancel()
     }
     func browserStateUpdateHandler(_ browser: NWBrowser,
                                    _ newState: NWBrowser.State) {

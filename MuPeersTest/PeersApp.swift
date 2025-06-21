@@ -12,7 +12,8 @@ struct PeersTestApp: App {
         // which seems to avoid some ssl issues
         PeersConfig(service: "_mupeers._tcp",
                     secret: "")) // "your-secret-here"
-
+        peers.setupPeers()
+    
     var body: some Scene {
         WindowGroup {
             ContentView(peers: peers)

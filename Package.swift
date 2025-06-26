@@ -4,8 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "MuPeer",
-    platforms: [.iOS(.v17),
-                .visionOS(.v2)],
+    platforms: [.iOS(.v17)],
     products: [.library(name: "MuPeers", targets: ["MuPeers"])],
     dependencies: [
 

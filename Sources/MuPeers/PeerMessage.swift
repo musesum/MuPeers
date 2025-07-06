@@ -2,7 +2,7 @@
 
 import Foundation
 
-struct PeerMessage: Codable, @unchecked Sendable {
+struct PeerMessage: Codable, Sendable {
     let peerId: String
     let text: String
 

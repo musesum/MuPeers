@@ -8,6 +8,7 @@ class PeersConnection: @unchecked Sendable {
     let peerId      : PeerId
     let peersLog    : PeersLog
     let peersConfig : PeersConfig
+
     var nwConnect   : [PeerId: NWConnection] = [:]
     var handshaking : [PeerId: PeerHandshake] = [:]
     var sendable    : Set<PeerId> = Set()

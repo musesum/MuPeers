@@ -3,19 +3,33 @@
 import Foundation
 import UIKit
 
-struct PeerDevice {
+public enum Idiom: @unchecked Sendable {
+    case iOS, iPadOS, macOS, tvOS, visionOS
 
+    @MainActor static var idiom: Idiom {
 #if os(visionOS)
-    static let name = "VisionOS"
+        return .visionOS
 #elseif os(macOS)
-    static let name = "MacOS"
+        return .macOS
 #elseif os(iPadOS)
-    static let name = "iPadOS"
+        return .iPadOS
 #elseif os(iOS)
-    static let name = "iOS"
+        return UIDevice.current.userInterfaceIdiom == .pad ? .iPadOS : .iOS
 #elseif os(tvOS)
-    static let name = "tvOS"
+        return .tvOS
 #else
-    static let name = "unknown device"
+        return .iOS
 #endif
+    }
+    var name : String {
+        switch self {
+        case .iOS       : return "iOS"
+        case .iPadOS    : return "iPadOS"
+        case .macOS     : return "macOS"
+        case .tvOS      : return "tvOS"
+        case .visionOS  : return "visionOS"
+        }
+    }
+
 }
+

@@ -76,7 +76,7 @@ final public class Peers: Sendable {
         }
     }
     
-    public func removeDelegate(_ delegate: PeersDelegate) {
+    public func removeDelegate(_ delegate: PeersDelegate) async {
         for (key, var delegates) in connections.delegates {
             delegates.removeAll { $0 === delegate }
             connections.delegates[key] = delegates

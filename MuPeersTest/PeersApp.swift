@@ -5,15 +5,18 @@ import UIKit
 
 @main
 struct PeersTestApp: App {
+    // see info.plist for _mupeers._tcp
+    // set secret to "" if you want to send in the clear,
+    // which seems to avoid some ssl issues
+    let config: PeersConfig
+    let peers: Peers
 
-    let peers = Peers(
-        // see info.plist for _mupeers._tcp
-        // set secret to "" if you want to send in the clear,
-        // which seems to avoid some ssl issues
-        PeersConfig(service: "_mupeers._tcp",
-                    secret: "")) // "your-secret-here"
-        peers.setupPeers()
-    
+    init() {
+        self.config = PeersConfig(service: "_mupeers._tcp", secret: "") // "your-secret-here"
+        self.peers = Peers(config, logging: true)
+        self.peers.setupPeers()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView(peers: peers)
@@ -134,7 +137,7 @@ public struct PeersTestView: View {
                 Image(systemName: "globe")
                     .imageScale(.large)
                     .foregroundStyle(.tint)
-                Text("\(PeerDevice.name) (\(peers.peerId)) \(appViewModel.counter)s")
+                Text("\(Idiom.idiom) (\(peers.peerId)) \(appViewModel.counter)s")
             }
             Text("")
             Text(peers.listPeerStatus())
@@ -176,7 +179,7 @@ struct DataFrameTestView: View {
                 Image(systemName: "globe")
                     .imageScale(.large)
                     .foregroundStyle(.tint)
-                Text("\(PeerDevice.name) (\(appViewModel.peerId)) \(appViewModel.counter)s")
+                Text("\(Idiom.idiom) (\(appViewModel.peerId)) \(appViewModel.counter)s")
             }
             
             Divider()

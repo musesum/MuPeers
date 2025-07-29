@@ -23,7 +23,7 @@ class PeersBrowser: @unchecked Sendable {
         self.peersLog = peersLog
         self.connections = connections
         self.peersConfig = peersConfig
-        //.... setupBrowser
+        //... setupBrowser
     }
 
     // Start browsing for peers

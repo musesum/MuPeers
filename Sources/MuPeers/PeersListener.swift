@@ -21,7 +21,7 @@ final class PeersListener: @unchecked Sendable {
         self.peersLog = peersLog
         self.connections = connections
         self.peersConfig = peersConfig
-        //.... setupListener
+        //... setupListener
     }
     
     func setupListener() {

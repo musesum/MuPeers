@@ -34,10 +34,11 @@ final public class Peers: Sendable {
     private let activeState = ActiveState()
 
 
-    public init(_ config: PeersConfig) {
+    public init(_ config: PeersConfig,
+                logging: Bool) {
 
         peerId      = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
-        peersLog    = PeersLog       (peerId)
+        peersLog    = PeersLog       (peerId, logging)
         connections = PeersConnection(peerId, peersLog, config)
         listener    = PeersListener  (peerId, peersLog, config, connections)
         browser     = PeersBrowser   (peerId, peersLog, config, connections)

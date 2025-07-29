@@ -7,13 +7,17 @@ import Network
 class PeersLog: @unchecked Sendable {
 
     let peerId: String // my PeerId
+    let logging: Bool
     var status: [String] = ["🎬 Action!"]
 
-    init(_ peerId: PeerId) {
+    init(_ peerId: PeerId,
+         _ logging: Bool) {
         self.peerId = peerId
+        self.logging = logging
     }
 
     func status(_ message: String)  {
+        guard logging else { return }
         while self.status.count > 10 {
             self.status.removeFirst()
         }
@@ -22,6 +26,7 @@ class PeersLog: @unchecked Sendable {
     }
     func log(_ message: String)  {
         #if DEBUG
+        guard logging else { return }
         print("\(peerId): \(message)")
         #endif
     }

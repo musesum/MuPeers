@@ -137,7 +137,7 @@ public struct PeersTestView: View {
                 Image(systemName: "globe")
                     .imageScale(.large)
                     .foregroundStyle(.tint)
-                Text("\(Idiom.idiom) (\(peers.peerId)) \(appViewModel.counter)s")
+                Text("\(Idiom.name) (\(peers.peerId)) \(appViewModel.counter)s")
             }
             Text("")
             Text(peers.listPeerStatus())
@@ -179,7 +179,7 @@ struct DataFrameTestView: View {
                 Image(systemName: "globe")
                     .imageScale(.large)
                     .foregroundStyle(.tint)
-                Text("\(Idiom.idiom) (\(appViewModel.peerId)) \(appViewModel.counter)s")
+                Text("\(Idiom.name) (\(appViewModel.peerId)) \(appViewModel.counter)s")
             }
             
             Divider()

@@ -26,7 +26,7 @@ class PeersLog: @unchecked Sendable {
     }
     func log(_ message: String)  {
         #if DEBUG
-        guard logging else { return }
+        guard logging else { return } 
         print("\(peerId): \(message)")
         #endif
     }

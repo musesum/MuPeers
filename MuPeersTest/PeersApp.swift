@@ -161,7 +161,7 @@ final class DataFrameDelegate: PeersDelegate {
         self.updateHandler = updateHandler
     }
     
-    nonisolated func received(data: Data) {
+    func received(data: Data) {
         if let message = try? JSONDecoder().decode(CounterMessage.self, from: data) {
             Task { @MainActor in
                 updateHandler(message)

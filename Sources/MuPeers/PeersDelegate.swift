@@ -1,6 +1,7 @@
 import Foundation
 
-public protocol PeersDelegate: AnyObject, Sendable {
+public protocol PeersDelegate: AnyObject {
 
     func received(data: Data)
 }
+

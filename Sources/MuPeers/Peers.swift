@@ -66,7 +66,7 @@ final public class Peers: Sendable {
     public func stopPeers() {
         
     }
-    public func setDelegate(_ delegate: PeersDelegate,
+    public func addDelegate(_ delegate: PeersDelegate,
                             for framerType: FramerType) {
         
         if connections.delegates[framerType] != nil {

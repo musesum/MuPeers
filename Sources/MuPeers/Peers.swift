@@ -44,7 +44,6 @@ final public class Peers: Sendable {
         browser     = PeersBrowser   (peerId, peersLog, config, connections)
     }
     public func setupPeers() {
-
         Task {
             let isActive = await activeState.get()
             if !isActive {
@@ -84,14 +83,15 @@ final public class Peers: Sendable {
         }
     }
 
-    // make sure there is a connection before the expense of encoding the message
+    /// make sure there is a connection before
+    /// the expense of getData() encoding the message
     public func sendItem(_ framerType: FramerType,
                          _ getData: @Sendable ()->Data?) async {
+
         if connections.sendable.count > 0,
            let data = getData() {
             await connections.broadcastData(framerType,data)
         }
-        
     }
     
     public func cleanupStaleConnections() {

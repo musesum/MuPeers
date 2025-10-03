@@ -31,7 +31,7 @@ class PeersBrowser: @unchecked Sendable {
         do {
             let parameters = NWParameters.make(secret: peersConfig.secret)
             self.browser = NWBrowser(for: .bonjour(type: peersConfig.service, domain: nil), using: parameters)
-            guard let browser else { return } //.... err?
+            guard let browser else { return } //.. err?
             browser.stateUpdateHandler = { newState in
                 self.browserStateUpdateHandler(browser, newState)
             }

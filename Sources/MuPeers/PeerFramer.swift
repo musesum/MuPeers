@@ -19,15 +19,15 @@ public enum FramerType: UInt32 {
     case handFrame  // hand pose
     case archiveFrame // archive sharing
 
-    var description: String {
+    public var description: String {
         switch self {
-        case .invalid    : return "invalid"
-        case .handshake  : return "handshake"
-        case .dataFrame  : return "data"
-        case .midiFrame  : return "midi"
-        case .touchFrame : return "touch"
-        case .menuFrame  : return "menu"
-        case .handFrame  : return "hand"
+        case .invalid      : return "invalid"
+        case .handshake    : return "handshake"
+        case .dataFrame    : return "data"
+        case .midiFrame    : return "midi"
+        case .touchFrame   : return "touch"
+        case .menuFrame    : return "menu"
+        case .handFrame    : return "hand"
         case .archiveFrame : return "archive"
         }
     }

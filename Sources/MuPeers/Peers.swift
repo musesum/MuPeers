@@ -3,10 +3,12 @@
 import Network
 import SwiftUI
 
-
-public protocol MirrorDelegate: Sendable {
-    func mirror(_ framerType: FramerType,
-                _ data: Data) async
+public protocol MirrorSink: Sendable {
+    func reflect(_ framerType: FramerType,
+                 _ data: Data) async
+}
+public protocol MirrorSource: Sendable {
+    func setMirror(on: Bool) async
 }
 
 final public class Peers: Sendable {
@@ -15,18 +17,18 @@ final public class Peers: Sendable {
     let listener: PeersListener
     let connection: PeersConnection
     let peersLog: PeersLog
-    let mirror: MirrorDelegate?
+    let mirrorSink: MirrorSink?
 
     public let peerId: String
     private let peerState = PeerState()
 
     public init(_ config: PeersConfig,
-                mirror: MirrorDelegate? = nil,
+                mirrorSink: MirrorSink? = nil,
                 logging: Bool) {
 
         self.peerId     = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
         self.peersLog   = PeersLog       (peerId, logging)
-        self.mirror     = mirror
+        self.mirrorSink = mirrorSink
         self.connection = PeersConnection(peerId, peersLog, config)
         self.listener   = PeersListener  (peerId, peersLog, config, connection)
         self.browser    = PeersBrowser   (peerId, peersLog, config, connection)
@@ -74,11 +76,11 @@ final public class Peers: Sendable {
                          _ getData: @Sendable ()->Data?) async {
 
         let status = await peerState.status
-        guard status.isEmpty == false,
+        guard !status.isEmpty,
               let data = getData() else { return }
 
-        if let mirror, status.mirror {
-            await mirror.mirror(framerType, data)
+        if let mirrorSink, status.mirror {
+            await mirrorSink.reflect(framerType, data)
         }
         if status.has(.send),
            connection.sendable.count > 0 {
@@ -91,3 +93,15 @@ final public class Peers: Sendable {
     }
 }
 
+extension Peers: MirrorSource {
+    public func setMirror(on: Bool) async {
+        guard mirrorSink != nil else { return }
+        var status = await peerState.status
+        if on {
+            status.insert(.mirror)
+        } else {
+            status.subtract(.mirror)
+        }
+        await peerState.set(status)
+    }
+}

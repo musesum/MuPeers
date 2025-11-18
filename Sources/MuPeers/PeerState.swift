@@ -12,17 +12,18 @@ public actor PeerState {
         return status.has(value)
     }
     func set(_ value: PeersOpt) { status = value }
+
 }
 
 
 public struct PeersOpt: OptionSet, Sendable {
-    public let rawValue: UInt8
-
-    public init(rawValue: UInt8) { self.rawValue = rawValue }
 
     static let send    = PeersOpt(rawValue: 1 << 0)
     static let receive = PeersOpt(rawValue: 1 << 1)
     static let mirror  = PeersOpt(rawValue: 1 << 2)
+
+    public var rawValue: UInt8
+    public init(rawValue: UInt8) { self.rawValue = rawValue }
 
     var send    : Bool { contains(.send   ) }
     var receive : Bool { contains(.receive) }
@@ -34,4 +35,5 @@ public struct PeersOpt: OptionSet, Sendable {
     func has(_ value: PeersOpt) -> Bool {
         self.contains(value)
     }
+   
 }

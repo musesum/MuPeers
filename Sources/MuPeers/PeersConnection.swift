@@ -8,12 +8,11 @@ class PeersConnection: @unchecked Sendable {
     let peerId      : PeerId
     let peersLog    : PeersLog
     let peersConfig : PeersConfig
-
     var nwConnect   : [PeerId: NWConnection] = [:]
     var handshaking : [PeerId: PeerHandshake] = [:]
     var sendable    : Set<PeerId> = Set()
     var delegates   : [FramerType: [PeersDelegate]] = [:]
-    var connectionKeys : [ObjectIdentifier: PeerId] = [:] // Track current key for each connection
+    var objPeerId   : [ObjectIdentifier: PeerId] = [:] // Track current key for each connection
     var lastActivity : [PeerId: Date] = [:] // Track last activity for each peer
 
     init(_ peerId: PeerId,
@@ -142,7 +141,7 @@ class PeersConnection: @unchecked Sendable {
         
         peersLog.status("🔗 connect:  \(connectId)")
         nwConnect[connectId] = connection
-        connectionKeys[ObjectIdentifier(connection)] = connectId
+        objPeerId[ObjectIdentifier(connection)] = connectId
         lastActivity[connectId] = Date()
 
         connection.stateUpdateHandler = { [weak self] state in
@@ -192,14 +191,14 @@ class PeersConnection: @unchecked Sendable {
 
             if let message = context.protocolMetadata(definition: PeerFramer.definition) as? NWProtocolFramer.Message {
                 // Find the current key for this connection (may have been transferred)
-                let currentKey = self.connectionKeys[ObjectIdentifier(connection)] ?? endpoint.peerId
-                guard self.nwConnect[currentKey] != nil
-                else { return log("🚨 receive from unknown connection \(currentKey) (original: \(endpoint.peerId))") }
+                let objPeerId = self.objPeerId[ObjectIdentifier(connection)] ?? endpoint.peerId
+                guard self.nwConnect[objPeerId] != nil
+                else { return log("🚨 receive from unknown connection \(objPeerId) (original: \(endpoint.peerId))") }
 
                 let framerType = message.framerType
                 
                 // Update activity tracking
-                self.lastActivity[currentKey] = Date()
+                self.lastActivity[objPeerId] = Date()
                 
                 switch framerType {
                 case .handshake : self.updateHandshake(connection, data)
@@ -298,7 +297,7 @@ class PeersConnection: @unchecked Sendable {
         peersLog.status("⛓️‍💥 disconnect: \(connectId)")
         if let connection = nwConnect[connectId] {
             connection.cancel()
-            connectionKeys.removeValue(forKey: ObjectIdentifier(connection))
+            objPeerId.removeValue(forKey: ObjectIdentifier(connection))
         }
         nwConnect.removeValue(forKey: connectId)
         handshaking.removeValue(forKey: connectId)
@@ -326,7 +325,7 @@ class PeersConnection: @unchecked Sendable {
         nwConnect.removeValue(forKey: oldKey)
         
         // Update reverse mapping
-        connectionKeys[ObjectIdentifier(connection)] = newKey
+        objPeerId[ObjectIdentifier(connection)] = newKey
         
         // Transfer activity tracking
         if let activity = lastActivity[oldKey] {

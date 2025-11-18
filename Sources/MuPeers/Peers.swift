@@ -3,51 +3,37 @@
 import Network
 import SwiftUI
 
-private actor ActiveState {
-    private var active = false
-    func get() -> Bool { active }
-    func set(_ value: Bool) { active = value }
-}
 
-let PeersPrefix: String = "☯︎"
-
-public struct PeersConfig {
-    let service: String
-    let secret: String
-    
-    public init(service: String,
-                secret: String) {
-        
-        self.service = service
-        self.secret = secret
-    }
+public protocol MirrorDelegate: Sendable {
+    func mirror(_ framerType: FramerType,
+                _ data: Data) async
 }
 
 final public class Peers: Sendable {
 
     let browser: PeersBrowser
     let listener: PeersListener
-    let connections: PeersConnection
+    let connection: PeersConnection
     let peersLog: PeersLog
-    
-    public let peerId: String
-    private let activeState = ActiveState()
+    let mirror: MirrorDelegate?
 
+    public let peerId: String
+    private let peerState = PeerState()
 
     public init(_ config: PeersConfig,
+                mirror: MirrorDelegate? = nil,
                 logging: Bool) {
 
-        peerId      = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
-        peersLog    = PeersLog       (peerId, logging)
-        connections = PeersConnection(peerId, peersLog, config)
-        listener    = PeersListener  (peerId, peersLog, config, connections)
-        browser     = PeersBrowser   (peerId, peersLog, config, connections)
+        self.peerId     = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
+        self.peersLog   = PeersLog       (peerId, logging)
+        self.mirror     = mirror
+        self.connection = PeersConnection(peerId, peersLog, config)
+        self.listener   = PeersListener  (peerId, peersLog, config, connection)
+        self.browser    = PeersBrowser   (peerId, peersLog, config, connection)
     }
     public func setupPeers() {
         Task {
-            let isActive = await activeState.get()
-            if !isActive {
-                await activeState.set(true)
+            if await !peerState.has([.send, .receive]) {
                 listener.setupListener()
                 browser.setupBrowser()
             }
@@ -55,9 +41,8 @@ final public class Peers: Sendable {
     }
     public func cancelPeers() {
         Task {
-            let isActive = await activeState.get()
-            if isActive {
-                await activeState.set(false)
+            if await peerState.hasAny([.send, .receive]) {
+                await peerState.set([])
                 listener.cancelListener()
                 browser.cancelBrowser()
             }
@@ -69,17 +54,17 @@ final public class Peers: Sendable {
     public func addDelegate(_ delegate: PeersDelegate,
                             for framerType: FramerType) {
         
-        if connections.delegates[framerType] != nil {
-            connections.delegates[framerType]?.append(delegate)
+        if connection.delegates[framerType] != nil {
+            connection.delegates[framerType]?.append(delegate)
         } else {
-            connections.delegates[framerType] = [delegate]
+            connection.delegates[framerType] = [delegate]
         }
     }
     
     public func removeDelegate(_ delegate: PeersDelegate) async {
-        for (key, var delegates) in connections.delegates {
+        for (key, var delegates) in connection.delegates {
             delegates.removeAll { $0 === delegate }
-            connections.delegates[key] = delegates
+            connection.delegates[key] = delegates
         }
     }
 
@@ -88,14 +73,21 @@ final public class Peers: Sendable {
     public func sendItem(_ framerType: FramerType,
                          _ getData: @Sendable ()->Data?) async {
 
-        if connections.sendable.count > 0,
-           let data = getData() {
-            await connections.broadcastData(framerType,data)
+        let status = await peerState.status
+        guard status.isEmpty == false,
+              let data = getData() else { return }
+
+        if let mirror, status.mirror {
+            await mirror.mirror(framerType, data)
         }
+        if status.has(.send),
+           connection.sendable.count > 0 {
+            await connection.broadcastData(framerType,data)
+        }  
     }
     
     public func cleanupStaleConnections() {
-        connections.cleanupStaleConnections()
+        connection.cleanupStaleConnections()
     }
 }
 

@@ -13,7 +13,7 @@ struct PeersTestApp: App {
 
     init() {
         self.config = PeersConfig(service: "_mupeers._tcp", secret: "") // "your-secret-here"
-        self.peers = Peers(config, logging: true)
+        self.peers = Peers(config, mirror: nil, logging: true)
         self.peers.setupPeers()
     }
 
@@ -47,7 +47,7 @@ public class AppViewModel: ObservableObject {
             self?.peerCounters[message.peerId] = message.counter
         }
         self.delegate = newDelegate
-        peers.setDelegate(newDelegate, for: .dataFrame)
+        peers.addDelegate(newDelegate, for: .dataFrame)
     }
     
     private func startTimer() {
@@ -155,16 +155,17 @@ struct CounterMessage: Codable {
 }
 
 final class DataFrameDelegate: PeersDelegate {
-    private let updateHandler: @MainActor (CounterMessage) -> Void
+    private let updateHandler: @Sendable @MainActor (CounterMessage) -> Void
     
-    init(updateHandler: @escaping @MainActor (CounterMessage) -> Void) {
+    init(updateHandler: @escaping @Sendable @MainActor (CounterMessage) -> Void) {
         self.updateHandler = updateHandler
     }
     
     func received(data: Data) {
         if let message = try? JSONDecoder().decode(CounterMessage.self, from: data) {
+            let handler = updateHandler
             Task { @MainActor in
-                updateHandler(message)
+                handler(message)
             }
         }
     }

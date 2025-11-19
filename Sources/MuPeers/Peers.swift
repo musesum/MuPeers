@@ -7,9 +7,6 @@ public protocol MirrorSink: Sendable {
     func reflect(_ framerType: FramerType,
                  _ data: Data) async
 }
-public protocol MirrorSource: Sendable {
-    func setMirror(on: Bool) async
-}
 
 final public class Peers: Sendable {
 
@@ -17,21 +14,21 @@ final public class Peers: Sendable {
     let listener: PeersListener
     let connection: PeersConnection
     let peersLog: PeersLog
-    let mirrorSink: MirrorSink?
+    let mirror: MirrorSink?
 
     public let peerId: String
     private let peerState = PeerState()
 
     public init(_ config: PeersConfig,
-                mirrorSink: MirrorSink? = nil,
+                mirror: MirrorSink?,
                 logging: Bool) {
 
         self.peerId     = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
         self.peersLog   = PeersLog       (peerId, logging)
-        self.mirrorSink = mirrorSink
         self.connection = PeersConnection(peerId, peersLog, config)
         self.listener   = PeersListener  (peerId, peersLog, config, connection)
         self.browser    = PeersBrowser   (peerId, peersLog, config, connection)
+        self.mirror     = mirror
     }
     public func setupPeers() {
         Task {
@@ -50,9 +47,7 @@ final public class Peers: Sendable {
             }
         }
     }
-    public func stopPeers() {
-        
-    }
+
     public func addDelegate(_ delegate: PeersDelegate,
                             for framerType: FramerType) {
         
@@ -79,8 +74,8 @@ final public class Peers: Sendable {
         guard !status.isEmpty,
               let data = getData() else { return }
 
-        if let mirrorSink, status.mirror {
-            await mirrorSink.reflect(framerType, data)
+        if let mirror, status.mirror {
+            await mirror.reflect(framerType, data)
         }
         if status.has(.send),
            connection.sendable.count > 0 {
@@ -91,11 +86,9 @@ final public class Peers: Sendable {
     public func cleanupStaleConnections() {
         connection.cleanupStaleConnections()
     }
-}
 
-extension Peers: MirrorSource {
     public func setMirror(on: Bool) async {
-        guard mirrorSink != nil else { return }
+        guard mirror != nil else { return }
         var status = await peerState.status
         if on {
             status.insert(.mirror)

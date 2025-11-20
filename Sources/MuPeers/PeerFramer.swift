@@ -9,7 +9,7 @@ typealias Framer = NWProtocolFramer.Instance
 /// which delegate in which to dispatch the data.
 /// handshake is unique in that it will determine
 /// whether a peerId has been accepted from both sides.
-public enum FramerType: UInt32 {
+public enum FramerType: UInt32, Codable, Sendable {
     case invalid
     case handshake  // verify / manage peers
     case dataFrame  // Generic Data, usually Codable

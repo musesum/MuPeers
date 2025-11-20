@@ -39,11 +39,11 @@ class PeersConnection: @unchecked Sendable {
 
     }
     // Send a message to all connected peers
-    func broadcastData(_ framerType: FramerType,
+    func broadcastData(_ type: FramerType,
                        _ data: Data) async {
 
         for peerId in sendable {
-            self.sendData(framerType, peerId, data)
+            self.sendData(type, peerId, data)
         }
     }
     func sendData(_ framerType: FramerType,

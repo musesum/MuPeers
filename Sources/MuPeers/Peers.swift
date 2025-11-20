@@ -1,12 +1,6 @@
 // created by musesum on 5/10/25
 
-import Network
-import SwiftUI
-
-public protocol MirrorSink: Sendable {
-    func reflect(_ framerType: FramerType,
-                 _ data: Data) async
-}
+import Foundation
 
 final public class Peers: Sendable {
 
@@ -67,7 +61,7 @@ final public class Peers: Sendable {
 
     /// make sure there is a connection before
     /// the expense of getData() encoding the message
-    public func sendItem(_ framerType: FramerType,
+    public func sendItem(_ type: FramerType,
                          _ getData: @Sendable ()->Data?) async {
 
         let status = await peerState.status
@@ -75,11 +69,13 @@ final public class Peers: Sendable {
               let data = getData() else { return }
 
         if let mirror, status.mirror {
-            await mirror.reflect(framerType, data)
+            let time = Date().timeIntervalSince1970
+            let item = MirrorItem(time, type, data)
+            await mirror.reflect(item)
         }
         if status.has(.send),
            connection.sendable.count > 0 {
-            await connection.broadcastData(framerType,data)
+            await connection.broadcastData(type,data)
         }  
     }
     

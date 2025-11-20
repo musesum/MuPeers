@@ -5,14 +5,15 @@ import UIKit
 
 @main
 struct PeersTestApp: App {
+
     // see info.plist for _mupeers._tcp
     // set secret to "" if you want to send in the clear,
     // which seems to avoid some ssl issues
-    let config: PeersConfig
+    let config: PeersConfig(service: "_mupeers._tcp", secret: "")
+
     let peers: Peers
 
     init() {
-        self.config = PeersConfig(service: "_mupeers._tcp", secret: "") // "your-secret-here"
         self.peers = Peers(config, mirror: nil, logging: true)
         self.peers.setupPeers()
     }

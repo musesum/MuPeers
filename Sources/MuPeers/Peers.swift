@@ -78,7 +78,18 @@ final public class Peers: Sendable {
             await connection.broadcastData(type,data)
         }  
     }
-    
+
+
+    public func playback(_ type: FramerType,
+                         _ data: Data) {
+
+        if let updateSet = connection.delegates[type] {
+            for update in updateSet {
+                update.received(data: data)
+            }
+        }
+    }
+
     public func cleanupStaleConnections() {
         connection.cleanupStaleConnections()
     }

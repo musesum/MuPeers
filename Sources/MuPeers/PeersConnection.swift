@@ -13,7 +13,7 @@ class PeersConnection: @unchecked Sendable {
     var sendable    : Set<PeerId> = Set()
     var delegates   : [FramerType: [PeersDelegate]] = [:]
     var objPeerId   : [ObjectIdentifier: PeerId] = [:] // Track current key for each connection
-    var lastActivity : [PeerId: Date] = [:] // Track last activity for each peer
+    var lastAction  : [PeerId: Date] = [:] // Track last action for each peer
 
     init(_ peerId: PeerId,
          _ peersLog: PeersLog,
@@ -142,7 +142,7 @@ class PeersConnection: @unchecked Sendable {
         peersLog.status("🔗 connect:  \(connectId)")
         nwConnect[connectId] = connection
         objPeerId[ObjectIdentifier(connection)] = connectId
-        lastActivity[connectId] = Date()
+        lastAction[connectId] = Date()
 
         connection.stateUpdateHandler = { [weak self] state in
             guard let self = self else { return }
@@ -161,7 +161,7 @@ class PeersConnection: @unchecked Sendable {
 
             case .cancelled:
                 self.peersLog.status("❌ cancelled: \(connectId)")
-               self.handleDisconnection(connectId)
+                self.handleDisconnection(connectId)
 
             default:
                 break
@@ -198,7 +198,7 @@ class PeersConnection: @unchecked Sendable {
                 let framerType = message.framerType
                 
                 // Update activity tracking
-                self.lastActivity[objPeerId] = Date()
+                self.lastAction[objPeerId] = Date()
                 
                 switch framerType {
                 case .handshake : self.updateHandshake(connection, data)
@@ -302,7 +302,7 @@ class PeersConnection: @unchecked Sendable {
         nwConnect.removeValue(forKey: connectId)
         handshaking.removeValue(forKey: connectId)
         sendable.remove(connectId)
-        lastActivity.removeValue(forKey: connectId)
+        lastAction.removeValue(forKey: connectId)
     }
     
     func transferConnection(from oldKey: String, to newKey: String, connection: NWConnection) {
@@ -328,9 +328,9 @@ class PeersConnection: @unchecked Sendable {
         objPeerId[ObjectIdentifier(connection)] = newKey
         
         // Transfer activity tracking
-        if let activity = lastActivity[oldKey] {
-            lastActivity[newKey] = activity
-            lastActivity.removeValue(forKey: oldKey)
+        if let activity = lastAction[oldKey] {
+            lastAction[newKey] = activity
+            lastAction.removeValue(forKey: oldKey)
         }
     }
     
@@ -338,7 +338,7 @@ class PeersConnection: @unchecked Sendable {
         let cutoffTime = Date().addingTimeInterval(-timeout)
         var staleConnections: [PeerId] = []
         
-        for (peerId, lastSeen) in lastActivity {
+        for (peerId, lastSeen) in lastAction {
             // Only cleanup if both: older than timeout AND connection is not ready
             if lastSeen < cutoffTime {
                 if let connection = nwConnect[peerId] {
@@ -348,7 +348,7 @@ class PeersConnection: @unchecked Sendable {
                         staleConnections.append(peerId)
                     case .ready, .preparing, .setup:
                         // Connection is still alive, update activity to prevent cleanup
-                        lastActivity[peerId] = Date()
+                        lastAction[peerId] = Date()
                     default:
                         // For waiting state, give it more time
                         break

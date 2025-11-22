@@ -16,7 +16,7 @@ public actor PeerState {
 }
 
 
-public struct PeersOpt: OptionSet, Sendable {
+public struct PeersOpt: OptionSet, Sendable, CustomStringConvertible, CustomDebugStringConvertible {
 
     static let send    = PeersOpt(rawValue: 1 << 0)
     static let receive = PeersOpt(rawValue: 1 << 1)
@@ -29,6 +29,16 @@ public struct PeersOpt: OptionSet, Sendable {
     var receive : Bool { contains(.receive) }
     var mirror  : Bool { contains(.mirror ) }
 
+    public var description: String {
+        var script: [String] = []
+        if contains(.send   ) { script.append("send") }
+        if contains(.receive) { script.append("receive") }
+        if contains(.mirror ) { script.append("mirror") }
+        return "[" + script.joined(separator: ", ") + "]"
+    }
+
+    public var debugDescription: String { description }
+
     func hasAny(_ value: PeersOpt) -> Bool {
         !self.intersection(value).isEmpty
     }
@@ -37,3 +47,4 @@ public struct PeersOpt: OptionSet, Sendable {
     }
    
 }
+

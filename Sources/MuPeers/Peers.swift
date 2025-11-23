@@ -85,7 +85,7 @@ final public class Peers: Sendable {
 
         if let updateSet = connection.delegates[type] {
             for update in updateSet {
-                update.received(data: data)
+                update.received(data: data, from: .local)
             }
         }
     }

@@ -225,7 +225,7 @@ class PeersConnection: @unchecked Sendable {
 
         if let updateSet = delegates[framerType] {
             for update in updateSet {
-                update.received(data: data)
+                update.received(data: data, from: .remote)
             }
         }
     }

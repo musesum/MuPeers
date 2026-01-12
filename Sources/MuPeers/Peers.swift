@@ -71,7 +71,7 @@ final public class Peers: Sendable {
         if let mirror, status.mirror {
             let time = Date().timeIntervalSince1970
             let item = MirrorItem(time, type, data)
-            await mirror.reflect(item)
+            await mirror.reflectItem(item)
         }
         if status.has(.send),
            connection.sendable.count > 0 {
@@ -79,13 +79,17 @@ final public class Peers: Sendable {
         }  
     }
 
-
     public func playback(_ type: FramerType,
                          _ data: Data) {
 
         if let updateSet = connection.delegates[type] {
             for update in updateSet {
                 update.received(data: data, from: .local)
+                if type == .touchFrame {
+                    Task {
+                        await connection.broadcastData(type, data)
+                    }
+                }
             }
         }
     }

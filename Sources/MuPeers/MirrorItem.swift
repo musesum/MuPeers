@@ -16,5 +16,5 @@ public struct MirrorItem: Codable, Sendable {
 }
 
 public protocol MirrorSink: Sendable {
-    func reflect(_ item: MirrorItem) async
+    func reflectItem(_ item: MirrorItem) async
 }

@@ -4,6 +4,7 @@ public enum DataFrom: String, Sendable {
     case remote
     case local
     case loop
+
 }
 
 public protocol PeersDelegate: AnyObject {

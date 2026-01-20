@@ -2,19 +2,23 @@
 
 import Foundation
 
+public protocol TapeProto: Sendable {
+    func replayItem(_ item: TapeItem) async
+}
+
 final public class Peers: Sendable {
 
     let browser: PeersBrowser
     let listener: PeersListener
     let connection: PeersConnection
     let peersLog: PeersLog
-    let mirror: MirrorSink?
+    let tapeProto: TapeProto?
 
     public let peerId: String
     private let peerState = PeerState()
 
     public init(_ config: PeersConfig,
-                mirror: MirrorSink?,
+                _ tapeProto: TapeProto?,
                 logging: Bool) {
 
         self.peerId     = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
@@ -22,7 +26,7 @@ final public class Peers: Sendable {
         self.connection = PeersConnection(peerId, peersLog, config)
         self.listener   = PeersListener  (peerId, peersLog, config, connection)
         self.browser    = PeersBrowser   (peerId, peersLog, config, connection)
-        self.mirror     = mirror
+        self.tapeProto  = tapeProto
     }
     public func setupPeers() {
         Task {
@@ -62,16 +66,17 @@ final public class Peers: Sendable {
     /// make sure there is a connection before
     /// the expense of getData() encoding the message
     public func sendItem(_ type: FramerType,
+                         _ time: TimeInterval? = nil,
                          _ getData: @Sendable ()->Data?) async {
 
         let status = await peerState.status
         guard !status.isEmpty,
               let data = getData() else { return }
 
-        if let mirror, status.mirror {
-            let time = Date().timeIntervalSince1970
-            let item = MirrorItem(time, type, data)
-            await mirror.reflectItem(item)
+        if let tapeProto, status.taping {
+            let time = time ?? Date().timeIntervalSince1970
+            let item = TapeItem(time, type, data)
+            await tapeProto.replayItem(item)
         }
         if status.has(.send),
            connection.sendable.count > 0 {
@@ -98,13 +103,13 @@ final public class Peers: Sendable {
         connection.cleanupStaleConnections()
     }
 
-    public func setMirror(on: Bool) async {
-        guard mirror != nil else { return }
+    public func setTape(on: Bool) async {
+        guard tapeProto != nil else { return }
         var status = await peerState.status
         if on {
-            status.insert(.mirror)
+            status.insert(.taping)
         } else {
-            status.subtract(.mirror)
+            status.subtract(.taping)
         }
         await peerState.set(status)
     }

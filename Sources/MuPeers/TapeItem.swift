@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct MirrorItem: Codable, Sendable {
+public struct TapeItem: Codable, Sendable {
 
     public let time: TimeInterval
     public let type: FramerType
@@ -15,6 +15,3 @@ public struct MirrorItem: Codable, Sendable {
     }
 }
 
-public protocol MirrorSink: Sendable {
-    func reflectItem(_ item: MirrorItem) async
-}

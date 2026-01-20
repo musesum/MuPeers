@@ -11,12 +11,12 @@ typealias Framer = NWProtocolFramer.Instance
 /// whether a peerId has been accepted from both sides.
 public enum FramerType: UInt32, Codable, Sendable {
     case invalid
-    case handshake  // verify / manage peers
-    case dataFrame  // Generic Data, usually Codable
-    case midiFrame  // midi message
-    case touchFrame // touch / draw
-    case menuFrame  // menu selection
-    case handFrame  // hand pose
+    case handshake    // verify / manage peers
+    case dataFrame    // Generic Data, usually Codable
+    case midiFrame    // midi message
+    case touchFrame   // touch / draw
+    case menuFrame    // menu selection
+    case handFrame    // hand pose
     case archiveFrame // archive sharing
 
     public var description: String {
@@ -37,13 +37,13 @@ public enum FramerType: UInt32, Codable, Sendable {
     /// should have their own framer
     var serviceClass: NWParameters.ServiceClass {
         switch self {
-        case .invalid    : return .background
-        case .handshake  : return .signaling
-        case .dataFrame  : return .responsiveData
-        case .midiFrame  : return .responsiveData
-        case .touchFrame : return .responsiveData
-        case .menuFrame  : return .responsiveData
-        case .handFrame  : return .responsiveData
+        case .invalid      : return .background
+        case .handshake    : return .signaling
+        case .dataFrame    : return .responsiveData
+        case .midiFrame    : return .responsiveData
+        case .touchFrame   : return .responsiveData
+        case .menuFrame    : return .responsiveData
+        case .handFrame    : return .responsiveData
         case .archiveFrame : return .responsiveData
         }
     }

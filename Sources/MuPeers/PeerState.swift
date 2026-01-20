@@ -12,7 +12,6 @@ public actor PeerState {
         return status.has(value)
     }
     func set(_ value: PeersOpt) { status = value }
-
 }
 
 
@@ -20,20 +19,20 @@ public struct PeersOpt: OptionSet, Sendable, CustomStringConvertible, CustomDebu
 
     static let send    = PeersOpt(rawValue: 1 << 0)
     static let receive = PeersOpt(rawValue: 1 << 1)
-    static let mirror  = PeersOpt(rawValue: 1 << 2)
+    static let taping  = PeersOpt(rawValue: 1 << 2)
 
     public var rawValue: UInt8
     public init(rawValue: UInt8) { self.rawValue = rawValue }
 
     var send    : Bool { contains(.send   ) }
     var receive : Bool { contains(.receive) }
-    var mirror  : Bool { contains(.mirror ) }
+    var taping  : Bool { contains(.taping ) }
 
     public var description: String {
         var script: [String] = []
         if contains(.send   ) { script.append("send") }
         if contains(.receive) { script.append("receive") }
-        if contains(.mirror ) { script.append("mirror") }
+        if contains(.taping ) { script.append("mirror") }
         return "[" + script.joined(separator: ", ") + "]"
     }
 

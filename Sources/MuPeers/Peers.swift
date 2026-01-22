@@ -74,8 +74,7 @@ final public class Peers: Sendable {
               let data = getData() else { return }
 
         if let tapeProto, status.taping {
-            let time = time ?? Date().timeIntervalSince1970
-            let item = TapeItem(time, type, data)
+            let item = TapeItem(type, data)
             await tapeProto.replayItem(item)
         }
         if status.has(.send),

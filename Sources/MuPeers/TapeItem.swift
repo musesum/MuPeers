@@ -8,8 +8,8 @@ public struct TapeItem: Codable, Sendable {
     public let type: FramerType
     public let data: Data
 
-    init(_ time: TimeInterval, _ type: FramerType, _ data: Data) {
-        self.time = time
+    init(_ type: FramerType, _ data: Data) {
+        self.time = Date().timeIntervalSince1970
         self.type = type
         self.data = data
     }

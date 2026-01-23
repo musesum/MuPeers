@@ -6,19 +6,23 @@ public protocol TapeProto: Sendable {
     func replayItem(_ item: TapeItem) async
 }
 
-final public class Peers: Sendable {
 
-    let browser: PeersBrowser
-    let listener: PeersListener
-    let connection: PeersConnection
-    let peersLog: PeersLog
-    let tapeProto: TapeProto?
+final public class Peers: @unchecked Sendable {
+
+    @MainActor public static let shared = Peers(
+        PeersConfig(service: "_deepmuse-peer._tcp",secret: ""),
+        logging: false)
+
+    let browser    : PeersBrowser
+    let listener   : PeersListener
+    let connection : PeersConnection
+    let peersLog   : PeersLog
+    var tapeProto  : TapeProto?
 
     public let peerId: String
     private let peerState = PeerState()
 
     public init(_ config: PeersConfig,
-                _ tapeProto: TapeProto?,
                 logging: Bool) {
 
         self.peerId     = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
@@ -26,9 +30,11 @@ final public class Peers: Sendable {
         self.connection = PeersConnection(peerId, peersLog, config)
         self.listener   = PeersListener  (peerId, peersLog, config, connection)
         self.browser    = PeersBrowser   (peerId, peersLog, config, connection)
-        self.tapeProto  = tapeProto
+        //must call setupPeers(tapeProto) later
     }
-    public func setupPeers() {
+    public func setupPeers(_ tapeProto: TapeProto) {
+        self.tapeProto = tapeProto
+        
         Task {
             if await !peerState.has([.send, .receive]) {
                 listener.setupListener()
@@ -113,3 +119,4 @@ final public class Peers: Sendable {
         await peerState.set(status)
     }
 }
+

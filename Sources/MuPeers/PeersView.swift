@@ -4,14 +4,11 @@ import SwiftUI
 
 public struct PeersView: View {
 
-    let peers: Peers
-    public init(_ peers: Peers) {
-        self.peers = peers
-    }
-
+    public init() {}
+    
     public var body: some View {
         VStack (alignment: .leading) {
-            Text(peers.listHandshake([.accepting,.verified]))
+            Text(Peers.shared.listHandshake([.accepting,.verified]))
                 .padding()
         }
     }

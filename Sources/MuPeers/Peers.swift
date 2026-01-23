@@ -3,9 +3,8 @@
 import Foundation
 
 public protocol TapeProto: Sendable {
-    func replayItem(_ item: TapeItem) async
+    func tapeItem(_ item: TapeItem) async
 }
-
 
 final public class Peers: @unchecked Sendable {
 
@@ -30,7 +29,7 @@ final public class Peers: @unchecked Sendable {
         self.connection = PeersConnection(peerId, peersLog, config)
         self.listener   = PeersListener  (peerId, peersLog, config, connection)
         self.browser    = PeersBrowser   (peerId, peersLog, config, connection)
-        //must call setupPeers(tapeProto) later
+        //must call setupPeers(tapeProto) to allow record, playback
     }
     public func setupPeers(_ tapeProto: TapeProto) {
         self.tapeProto = tapeProto
@@ -81,7 +80,7 @@ final public class Peers: @unchecked Sendable {
 
         if let tapeProto, status.taping {
             let item = TapeItem(type, data)
-            await tapeProto.replayItem(item)
+            await tapeProto.tapeItem(item)
         }
         if status.has(.send),
            connection.sendable.count > 0 {

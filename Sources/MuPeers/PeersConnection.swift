@@ -61,7 +61,7 @@ class PeersConnection: @unchecked Sendable {
         guard connection.state == .ready else {
             peersLog.status("⚠️ send '\(text)' to \(connectId) Connection not ready: \(connection.state)")
             if case .failed(_) = connection.state {
-                sendable.remove(connectId)
+                sendable.remove(connectId) //..... bad access
             }
             return
         }

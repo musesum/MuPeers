@@ -71,7 +71,6 @@ final public class Peers: @unchecked Sendable {
     /// make sure there is a connection before
     /// the expense of getData() encoding the message
     public func sendItem(_ type: FramerType,
-                         _ time: TimeInterval? = nil,
                          _ getData: @Sendable ()->Data?) async {
 
         let status = await peerState.status

@@ -6,7 +6,7 @@ import Network
 typealias Framer = NWProtocolFramer.Instance
 
 /// types of messages for PeerFramer will determine
-/// which delegate in which to dispatch the data.
+/// which delegate to dispatch the data.
 /// handshake is unique in that it will determine
 /// whether a peerId has been accepted from both sides.
 public enum FramerType: UInt32, Codable, Sendable {
@@ -17,6 +17,7 @@ public enum FramerType: UInt32, Codable, Sendable {
     case touchFrame   // touch / draw
     case menuFrame    // menu selection
     case handFrame    // hand pose
+    case tapeFrame    // tape events
     case archiveFrame // archive sharing
 
     public var description: String {
@@ -28,6 +29,7 @@ public enum FramerType: UInt32, Codable, Sendable {
         case .touchFrame   : return "touch"
         case .menuFrame    : return "menu"
         case .handFrame    : return "hand"
+        case .tapeFrame    : return "tape"
         case .archiveFrame : return "archive"
         }
     }
@@ -44,6 +46,7 @@ public enum FramerType: UInt32, Codable, Sendable {
         case .touchFrame   : return .responsiveData
         case .menuFrame    : return .responsiveData
         case .handFrame    : return .responsiveData
+        case .tapeFrame    : return .responsiveData
         case .archiveFrame : return .responsiveData
         }
     }

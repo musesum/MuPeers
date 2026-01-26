@@ -3,7 +3,7 @@
 import Foundation
 
 public protocol TapeProto: Sendable {
-    func tapeItem(_ item: TapeItem) async
+    func typeItem(_ item: TypeItem) async
 }
 
 final public class Peers: @unchecked Sendable {
@@ -77,9 +77,10 @@ final public class Peers: @unchecked Sendable {
         guard !status.isEmpty,
               let data = getData() else { return }
 
+        // maybe record this item
         if let tapeProto, status.taping {
-            let item = TapeItem(type, data)
-            await tapeProto.tapeItem(item)
+            let item = TypeItem(type, data)
+            await tapeProto.typeItem(item)
         }
         if status.has(.send),
            connection.sendable.count > 0 {
@@ -87,7 +88,7 @@ final public class Peers: @unchecked Sendable {
         }  
     }
 
-    public func playback(_ type: FramerType,
+    public func playItem(_ type: FramerType,
                          _ data: Data) {
 
         if let updateSet = connection.delegates[type] {

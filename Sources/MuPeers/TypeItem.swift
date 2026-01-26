@@ -14,6 +14,11 @@ public final class TypeItem: Codable, @unchecked Sendable {
         self.data = data
         self.time = Date().timeIntervalSince1970
     }
+    init() {
+        self.type = .init(rawValue: 0)!
+        self.data = Data()
+        self.time = Date().timeIntervalSince1970
+    }
     public func normalize(_ deltaTime: TimeInterval) {
         self.time -= deltaTime
     }

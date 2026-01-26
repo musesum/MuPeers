@@ -8,7 +8,7 @@ public protocol TapeProto: Sendable {
 
 final public class Peers: @unchecked Sendable {
 
-    @MainActor public static let shared = Peers(
+    public static let shared = Peers(
         PeersConfig(service: "_deepmuse-peer._tcp",secret: ""),
         logging: false)
 

@@ -9,5 +9,7 @@ public enum DataFrom: String, Sendable {
 
 public protocol PeersDelegate: AnyObject {
     func received(data: Data, from: DataFrom)
+    func shareItem(_ item: Any)
+    
 }
 

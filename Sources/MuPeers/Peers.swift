@@ -88,16 +88,14 @@ final public class Peers: @unchecked Sendable {
         }  
     }
 
-    public func playItem(_ type: FramerType,
-                         _ data: Data) {
+    public func playItem(_ item: TypeItem) {
+        let (type, data) = (item.type, item.data)
 
         if let updateSet = connection.delegates[type] {
             for update in updateSet {
                 update.received(data: data, from: .local)
-                if type == .touchFrame {
-                    Task {
-                        await connection.broadcastData(type, data) //.....
-                    }
+                Task {
+                    await connection.broadcastData(type, data)
                 }
             }
         }

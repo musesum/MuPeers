@@ -18,7 +18,7 @@ public enum FramerType: UInt32, Codable, Sendable {
     case menuFrame    // menu selection
     case handFrame    // hand pose
     case tapeFrame    // tape events
-    case trackFrame  // tape .recording, .playback, .stopped
+    case trackFrame   // tape .recording, .playback, .stopped
     case archiveFrame // archive sharing
 
     public var description: String {

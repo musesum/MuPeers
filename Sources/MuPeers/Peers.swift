@@ -1,7 +1,6 @@
 // created by musesum on 5/10/25
 
 import Foundation
-
 public protocol TapeProto: Sendable {
     func typeItem(_ item: TypeItem) async
 }
@@ -88,14 +87,14 @@ final public class Peers: @unchecked Sendable {
         }  
     }
 
-    public func playItem(_ item: TypeItem) {
+    public func playItem(_ trackState: UInt,_ item: TypeItem, _ from: DataFrom) {
         let (type, data) = (item.type, item.data)
-
         if let updateSet = connection.delegates[type] {
             for update in updateSet {
-                update.received(data: data, from: .local)
-                Task {
-                    await connection.broadcastData(type, data)
+
+                update.received(data: data, from: from)
+                if from != .remote {
+                    Task { await connection.broadcastData(type, data) }
                 }
             }
         }

@@ -13,12 +13,12 @@ public enum FramerType: UInt32, Codable, Sendable {
     case invalid
     case handshake    // verify / manage peers
     case dataFrame    // Generic Data, usually Codable
-    case midiFrame    // midi message
-    case touchFrame   // touch / draw
-    case menuFrame    // menu selection
+    case midiItem     // midi message
+    case touchCanvas  // touch / draw
+    case menuItem     // menu selection
     case handFrame    // hand pose
-    case tapeFrame    // tape events
-    case trackFrame   // tape .recording, .playback, .stopped
+    case tapeTrack    // tape events
+    case playStatus   // tape .recording, .playback, .stopped
     case archiveFrame // archive sharing
 
     public var description: String {
@@ -26,12 +26,12 @@ public enum FramerType: UInt32, Codable, Sendable {
         case .invalid      : return "invalid"
         case .handshake    : return "handshake"
         case .dataFrame    : return "data"
-        case .midiFrame    : return "midi"
-        case .touchFrame   : return "touch"
-        case .menuFrame    : return "menu"
+        case .midiItem     : return "midiItem"
+        case .touchCanvas  : return "touchCanvas"
+        case .menuItem     : return "menuItem"
         case .handFrame    : return "hand"
-        case .tapeFrame    : return "tape"
-        case .trackFrame   : return "track"
+        case .tapeTrack    : return "tapeTrack"
+        case .playStatus   : return "playStatus"
         case .archiveFrame : return "archive"
         }
     }
@@ -44,12 +44,12 @@ public enum FramerType: UInt32, Codable, Sendable {
         case .invalid      : return .background
         case .handshake    : return .signaling
         case .dataFrame    : return .responsiveData
-        case .midiFrame    : return .responsiveData
-        case .touchFrame   : return .responsiveData
-        case .menuFrame    : return .responsiveData
+        case .midiItem     : return .responsiveData
+        case .touchCanvas  : return .responsiveData
+        case .menuItem     : return .responsiveData
         case .handFrame    : return .responsiveData
-        case .tapeFrame    : return .responsiveData
-        case .trackFrame  : return  .responsiveData
+        case .tapeTrack    : return .responsiveData
+        case .playStatus   : return .responsiveData
         case .archiveFrame : return .responsiveData
         }
     }

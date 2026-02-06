@@ -2,7 +2,7 @@
 
 import Foundation
 public protocol TapeProto: Sendable {
-    func typeItem(_ item: TypeItem) async
+    func playItem(_ item: PlayItem) async
 }
 
 final public class Peers: @unchecked Sendable {
@@ -78,8 +78,8 @@ final public class Peers: @unchecked Sendable {
 
         // maybe record this item
         if let tapeProto, status.taping {
-            let item = TypeItem(type, data)
-            await tapeProto.typeItem(item)
+            let item = PlayItem(type, data)
+            await tapeProto.playItem(item)
         }
         if status.has(.send),
            connection.sendable.count > 0 {
@@ -87,15 +87,21 @@ final public class Peers: @unchecked Sendable {
         }  
     }
 
-    public func playItem(_ trackState: UInt,_ item: TypeItem, _ from: DataFrom) {
+    public func playItem(_ playState: PlayState,_ item: PlayItem, _ from: DataFrom) {
         let (type, data) = (item.type, item.data)
         if let updateSet = connection.delegates[type] {
             for update in updateSet {
-
                 update.received(data: data, from: from)
                 if from != .remote {
                     Task { await connection.broadcastData(type, data) }
                 }
+            }
+        }
+    }
+    public func resetItem(_ item: PlayItem) {
+        if let updateSet = connection.delegates[item.type] {
+            for update in updateSet {
+                update.resetItem(item)
             }
         }
     }

@@ -45,6 +45,12 @@ enum EndpointType {
 
 typealias PeerId = String
 
+extension Int {
+    var script5: String {
+        "…"+String(String(self).suffix(5))
+    }
+}
+
 extension String {
     /// Extract the UInt64 value from a peerId string
     var peerIdNumber: UInt64? {

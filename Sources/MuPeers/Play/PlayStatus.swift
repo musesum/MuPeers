@@ -13,10 +13,10 @@ public struct PlayStatus: Codable, Sendable {
         self.playState = PlayState([.loop,.stop])
     }
     public var script: String {
-        "deckId: \(deckId.script5) trackId: \(trackId.script5) state: \(playState.description))"
+        "deck/track: \(deckId.script5)/\(trackId.script5) state: \(playState.description))"
     }
     public var Script: String {
-        "TrackStatus " + script
+        "PlayStatus " + script
     }
     public mutating func setState(_ newState: PlayState) {
         playState = newState

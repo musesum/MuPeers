@@ -87,21 +87,27 @@ final public class Peers: @unchecked Sendable {
         }  
     }
 
-    public func playItem(_ playState: PlayState,_ item: PlayItem, _ from: DataFrom) {
-        let (type, data) = (item.type, item.data)
-        if let updateSet = connection.delegates[type] {
+    public func playItem(_ playState: PlayState,
+                         _ item: PlayItem,
+                         _ from: DataFrom) {
+
+        if let updateSet = connection.delegates[item.type] {
             for update in updateSet {
-                update.received(data: data, from: from)
-                if from != .remote {
-                    Task { await connection.broadcastData(type, data) }
+
+                update.playItem(item, from: from)
+
+                if from != .remote, !playState.play {
+                    Task { await connection.broadcastData(item.type, item.data) }
                 }
             }
         }
     }
-    public func resetItem(_ item: PlayItem) {
-        if let updateSet = connection.delegates[item.type] {
-            for update in updateSet {
-                update.resetItem(item)
+    public func resetPlayItems(_ playItems: [PlayItem]) {
+        for playItem in playItems {
+            if let updateSet = connection.delegates[playItem.type] {
+                for update in updateSet {
+                    update.resetItem(playItem)
+                }
             }
         }
     }

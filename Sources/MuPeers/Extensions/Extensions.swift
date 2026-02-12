@@ -46,7 +46,7 @@ enum EndpointType {
 typealias PeerId = String
 
 extension Int {
-    var script5: String {
+    public var script5: String {
         "…"+String(String(self).suffix(5))
     }
 }

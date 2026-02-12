@@ -62,8 +62,8 @@ public struct PlayState: OptionSet, Sendable, Codable {
     public mutating func setOn(_ state: PlayState) {
         switch state {
         case .stop   : set(on: .stop  , off: [.record, .play, .learn, .beat, .remove, .ending])
-        case .record : set(on: .record, off: [.play,   .stop, .learn, .beat, .remove, .ending])
         case .play   : set(on: .play  , off: [.record, .stop, .learn, .beat, .remove, .ending])
+        case .record : set(on: .record, off: [.play,   .stop, .learn, .beat, .remove, .ending])
         case .loop   : set(on: .loop  , off: [.remove, .ending])
         case .learn  : set(on: .learn , off: [.record, .stop, .play, .beat,  .remove, .ending])
         case .beat   : set(on: .beat  , off: [.record, .stop, .play, .learn, .remove, .ending])

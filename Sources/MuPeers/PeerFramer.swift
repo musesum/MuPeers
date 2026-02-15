@@ -20,7 +20,7 @@ public enum FramerType: UInt32, Codable, Sendable {
     case tapeTrack    // tape events
     case playStatus   // tape .recording, .playback, .stopped
     case archiveFrame // archive sharing
-
+    
     public var description: String {
         switch self {
         case .invalid      : return "invalid"
@@ -57,33 +57,33 @@ public enum FramerType: UInt32, Codable, Sendable {
 
 // Custom NWProtocolFramer for passing peer metadata
 class PeerFramer: NWProtocolFramerImplementation {
-
+    
     static let definition = NWProtocolFramer.Definition(implementation: PeerFramer.self)
     static var label: String { return "PeerFramer" }
-
+    
     required init(framer: Framer) {}
     func start   (framer: Framer) -> NWProtocolFramer.StartResult { return .ready }
     func wakeup  (framer: Framer) {}
     func stop    (framer: Framer) -> Bool { return true }
     func cleanup (framer: Framer) {}
-
+    
     func handleOutput(framer: Framer,
                       message: NWProtocolFramer.Message,
                       messageLength: Int,
                       isComplete: Bool) {
-
+        
         let type = message.framerType
         let header = PeerFramerHeader(type: type.rawValue, length: UInt32(messageLength))
         
         framer.writeOutput(data: header.encodedData)
-
+        
         do {
             try framer.writeOutputNoCopy(length: messageLength)
         } catch let error {
             print("Hit error writing \(error)")
         }
     }
-
+    
     func handleInput(framer: Framer) -> Int {
         while true {
             var tempHeader: PeerFramerHeader? = nil
@@ -97,14 +97,14 @@ class PeerFramer: NWProtocolFramerImplementation {
                     tempHeader = PeerFramerHeader(buffer)
                     return headerSize
                 }
-
+            
             guard parsed, let header = tempHeader else { return headerSize }
             var messageType = FramerType.invalid
             if let parsedMessageType = FramerType(rawValue: header.type) {
                 messageType = parsedMessageType
             }
             let message = NWProtocolFramer.Message(framerType: messageType)
-
+            
             if !framer.deliverInputNoCopy(length: Int(header.length), message: message, isComplete: true) {
                 return 0
             }
@@ -118,7 +118,7 @@ extension NWProtocolFramer.Message {
         self.init(definition: PeerFramer.definition)
         self["FramerType"] = framerType
     }
-
+    
     var framerType: FramerType {
         if let type = self["FramerType"] as? FramerType {
             return type
@@ -127,4 +127,3 @@ extension NWProtocolFramer.Message {
         }
     }
 }
-

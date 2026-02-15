@@ -7,9 +7,9 @@ public enum DataFrom: String, Sendable, Codable {
 
     public var icon: String {
         switch self {
-        case .remote: return "📡 remote"
-        case .local: return "🏠 local"
-        case .loop: return "➰ loop"
+        case .remote: return "📡"
+        case .local: return "🏠"
+        case .loop: return "➰"
         }
     }
 }

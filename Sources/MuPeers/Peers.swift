@@ -6,23 +6,23 @@ public protocol TapeProto: Sendable {
 }
 
 final public class Peers: @unchecked Sendable {
-
+    
     public static let shared = Peers(
         PeersConfig(service: "_deepmuse-peer._tcp",secret: ""),
         logging: false)
-
+    
     let browser    : PeersBrowser
     let listener   : PeersListener
     let connection : PeersConnection
     let peersLog   : PeersLog
     var tapeProto  : TapeProto?
-
+    
     public let peerId: String
     private let peerState = PeerState()
-
+    
     public init(_ config: PeersConfig,
                 logging: Bool) {
-
+        
         self.peerId     = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
         self.peersLog   = PeersLog       (peerId, logging)
         self.connection = PeersConnection(peerId, peersLog, config)
@@ -49,7 +49,7 @@ final public class Peers: @unchecked Sendable {
             }
         }
     }
-
+    
     public func addDelegate(_ delegate: PeersDelegate,
                             for framerType: FramerType) {
         
@@ -66,16 +66,16 @@ final public class Peers: @unchecked Sendable {
             connection.delegates[key] = delegates
         }
     }
-
+    
     /// make sure there is a connection before
     /// the expense of getData() encoding the message
     public func sendItem(_ type: FramerType,
                          _ getData: @Sendable ()->Data?) async {
-
+        
         let status = await peerState.status
         guard !status.isEmpty,
               let data = getData() else { return }
-
+        
         // maybe record this item
         if let tapeProto, status.taping {
             let item = PlayItem(type, data)
@@ -86,16 +86,16 @@ final public class Peers: @unchecked Sendable {
             await connection.broadcastData(type,data)
         }  
     }
-
+    
     public func playItem(_ playState: PlayState,
                          _ item: PlayItem,
                          _ from: DataFrom) {
-
+        
         if let updateSet = connection.delegates[item.type] {
             for update in updateSet {
-
+                
                 update.playItem(item, from: from)
-
+                
                 if from != .remote, !playState.play {
                     Task { await connection.broadcastData(item.type, item.data) }
                 }
@@ -111,11 +111,11 @@ final public class Peers: @unchecked Sendable {
             }
         }
     }
-
+    
     public func cleanupStaleConnections() {
         connection.cleanupStaleConnections()
     }
-
+    
     public func setTape(on: Bool) async {
         guard tapeProto != nil else { return }
         var status = await peerState.status
@@ -127,4 +127,3 @@ final public class Peers: @unchecked Sendable {
         await peerState.set(status)
     }
 }
-

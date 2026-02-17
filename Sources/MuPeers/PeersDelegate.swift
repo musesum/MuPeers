@@ -1,7 +1,7 @@
 import Foundation
 
-public enum DataFrom: String, Sendable, Codable {
-    case remote
+public enum DataFrom: Sendable, Codable, Equatable {
+    case remote(String)
     case local
     case loop
 
@@ -19,5 +19,5 @@ public protocol PeersDelegate: AnyObject {
     func shareItem(_ : Any)
     func resetItem(_ : PlayItem)
     func playItem(_ : PlayItem, from: DataFrom)
+    func dropped(from: DataFrom)
 }
-

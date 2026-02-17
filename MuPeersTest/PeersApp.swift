@@ -162,7 +162,7 @@ final class DataFrameDelegate: PeersDelegate {
         self.updateHandler = updateHandler
     }
     
-    func received(data: Data) {
+    func received(data: Data, from: DataFrom) {
         if let message = try? JSONDecoder().decode(CounterMessage.self, from: data) {
             let handler = updateHandler
             Task { @MainActor in
@@ -170,6 +170,11 @@ final class DataFrameDelegate: PeersDelegate {
             }
         }
     }
+
+    func shareItem(_ item: Any) {}
+    func resetItem(_ item: PlayItem) {}
+    func playItem(_ item: PlayItem, from: DataFrom) {}
+    func dropped(from: DataFrom) {}
 }
 
 struct DataFrameTestView: View {

@@ -96,7 +96,11 @@ final public class Peers: @unchecked Sendable {
                 
                 update.playItem(item, from: from)
                 
-                if from != .remote, !playState.play {
+                // Check if not remote
+                var isRemote = false
+                if case .remote = from { isRemote = true }
+
+                if !isRemote, !playState.play {
                     Task { await connection.broadcastData(item.type, item.data) }
                 }
             }

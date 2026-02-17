@@ -223,9 +223,11 @@ class PeersConnection: @unchecked Sendable {
                     _ connection: NWConnection,
                     _ data: Data) {
 
+        let objPeerId = self.objPeerId[ObjectIdentifier(connection)] ?? connection.endpoint.peerId
+
         if let updateSet = delegates[framerType] {
             for update in updateSet {
-                update.received(data: data, from: .remote)
+                update.received(data: data, from: .remote(objPeerId))
             }
         }
     }
@@ -303,6 +305,19 @@ class PeersConnection: @unchecked Sendable {
         handshaking.removeValue(forKey: connectId)
         sendable.remove(connectId)
         lastAction.removeValue(forKey: connectId)
+
+        Task { @MainActor in
+            var notified = Set<ObjectIdentifier>()
+            for delegateList in self.delegates.values {
+                for delegate in delegateList {
+                    let id = ObjectIdentifier(delegate)
+                    if !notified.contains(id) {
+                        delegate.dropped(from: .remote(connectId))
+                        notified.insert(id)
+                    }
+                }
+            }
+        }
     }
     
     func transferConnection(from oldKey: String, to newKey: String, connection: NWConnection) {

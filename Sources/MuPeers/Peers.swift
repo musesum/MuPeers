@@ -9,7 +9,7 @@ final public class Peers: @unchecked Sendable {
     
     public static let shared = Peers(
         PeersConfig(service: "_deepmuse-peer._tcp",secret: ""),
-        logging: false)
+        logging: true)
     
     let browser    : PeersBrowser
     let listener   : PeersListener

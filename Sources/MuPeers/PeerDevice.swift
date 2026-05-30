@@ -1,7 +1,9 @@
 // created by musesum on 5/23/25
 
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#endif
 
 @MainActor
 public enum Idiom: @unchecked Sendable {

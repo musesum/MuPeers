@@ -41,6 +41,7 @@ final class PeersListener: @unchecked Sendable {
     }
     func cancelListener() {
         listener?.cancel()
+        listener = nil   // a deliberately cancelled listener must not auto-restart via the defunct-DNS path
     }
 
     func startListening() {
@@ -56,8 +57,10 @@ final class PeersListener: @unchecked Sendable {
                 if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_DefunctConnection)) {
                     peersLog.log("Listener failed with \(error), restarting")
                     listener.cancel()
-                    self.setupListener()
-                    
+                    if listener === self.listener {   // stale instance (cancelPeers ran) must not resurrect advertising
+                        self.setupListener()
+                    }
+
                 } else {
                     peersLog.log("advertise error: \(error)")
                     listener.cancel()

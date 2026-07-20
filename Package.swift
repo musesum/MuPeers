@@ -13,7 +13,8 @@ let package = Package(
         .target(
             name: "MuPeers",
             dependencies: [
-               
-            ])
+
+            ]),
+        .testTarget(name: "MuPeersTests", dependencies: ["MuPeers"])
     ]
 )

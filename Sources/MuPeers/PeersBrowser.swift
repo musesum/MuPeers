@@ -35,6 +35,7 @@ class PeersBrowser: @unchecked Sendable {
                 self.browserStateUpdateHandler(browser, newState)
             }
             browser.browseResultsChangedHandler = { results, _ in
+                guard browser === self.browser else { return }   // stale instance after cancelPeers
                 self.connections.refreshResults(results)
             }
             browser.start(queue: .main)
@@ -43,6 +44,7 @@ class PeersBrowser: @unchecked Sendable {
     }
     func cancelBrowser() {
         browser?.cancel()
+        browser = nil   // a deliberately cancelled browser must not auto-restart or sweep connections
     }
     func browserStateUpdateHandler(_ browser: NWBrowser,
                                    _ newState: NWBrowser.State) {
@@ -52,7 +54,9 @@ class PeersBrowser: @unchecked Sendable {
             if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_DefunctConnection)) {
                 peersLog.log("Browser failed with \(error), restarting")
                 browser.cancel()
-                self.setupBrowser()
+                if browser === self.browser {   // stale instance (cancelPeers ran) must not resurrect browsing
+                    self.setupBrowser()
+                }
             } else {
                 peersLog.log("Browser failed with \(error)")
                 browser.cancel()
@@ -61,7 +65,11 @@ class PeersBrowser: @unchecked Sendable {
             // Post initial results.
             connections.refreshResults(browser.browseResults)
         case .cancelled:
-            connections.refreshResults(Set())
+            // Only the CURRENT browser may sweep; a stale .cancelled landing after a fast
+            // off→on re-setup would disconnect the peers the new browser just found.
+            if browser === self.browser {
+                connections.refreshResults(Set())
+            }
         default:
             break
         }

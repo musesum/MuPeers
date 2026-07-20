@@ -12,6 +12,10 @@ public actor PeerState {
         return status.has(value)
     }
     func set(_ value: PeersOpt) { status = value }
+    // atomic single-hop mutations — a get-modify-set across awaits can interleave
+    // with another caller's (e.g. setTape vs cancelPeers) and resurrect stale flags
+    func insert(_ value: PeersOpt) { status.formUnion(value) }
+    func subtract(_ value: PeersOpt) { status.subtract(value) }
 }
 
 

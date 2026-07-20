@@ -18,7 +18,10 @@ final public class Peers: @unchecked Sendable {
     var tapeProto  : TapeProto?
     
     public let peerId: String
-    private let peerState = PeerState()
+    let peerState = PeerState()   // internal for @testable flag assertions
+    // serializes setup/cancel transitions so the LAST call wins — two unordered
+    // Tasks (rapid toggle off→on) could otherwise end opposite the caller's intent
+    var peersTask: Task<Void, Never>?   // internal so tests can await settlement
     
     public init(_ config: PeersConfig,
                 logging: Bool) {
@@ -30,22 +33,35 @@ final public class Peers: @unchecked Sendable {
         self.browser    = PeersBrowser   (peerId, peersLog, config, connection)
         //must call setupPeers(tapeProto) to allow record, playback
     }
+    // @MainActor: NW callbacks run on .main; off-main setup/cancel would race the
+    // `=== self.listener/browser` staleness guards in those callbacks, and the
+    // peersTask swap needs one executor for last-call-wins ordering. The inner
+    // Tasks inherit MainActor isolation, so the lifecycle calls stay on .main.
+    @MainActor
     public func setupPeers(_ tapeProto: TapeProto) {
         self.tapeProto = tapeProto
-        
-        Task {
+
+        let previous = peersTask
+        peersTask = Task {
+            await previous?.value
             if await !peerState.has([.send, .receive]) {
+                // restore send/receive after a cancelPeers, else sendItem stays dead
+                await peerState.insert([.send, .receive])
                 listener.setupListener()
                 browser.setupBrowser()
             }
         }
     }
+    @MainActor
     public func cancelPeers() {
-        Task {
+        let previous = peersTask
+        peersTask = Task {
+            await previous?.value
             if await peerState.hasAny([.send, .receive]) {
-                await peerState.set([])
+                await peerState.subtract([.send, .receive])
                 listener.cancelListener()
                 browser.cancelBrowser()
+                connection.disconnectAll()
             }
         }
     }
@@ -70,15 +86,16 @@ final public class Peers: @unchecked Sendable {
     /// make sure there is a connection before
     /// the expense of getData() encoding the message
     public func sendItem(_ type: FramerType,
+                         path: String = "",
                          _ getData: @Sendable ()->Data?) async {
-        
+
         let status = await peerState.status
         guard !status.isEmpty,
               let data = getData() else { return }
-        
+
         // maybe record this item
         if let tapeProto, status.taping {
-            let item = PlayItem(type, data)
+            let item = PlayItem(type, data, path: path)
             await tapeProto.playItem(item)
         }
         if status.has(.send),
@@ -122,12 +139,10 @@ final public class Peers: @unchecked Sendable {
     
     public func setTape(on: Bool) async {
         guard tapeProto != nil else { return }
-        var status = await peerState.status
         if on {
-            status.insert(.taping)
+            await peerState.insert(.taping)
         } else {
-            status.subtract(.taping)
+            await peerState.subtract(.taping)
         }
-        await peerState.set(status)
     }
 }

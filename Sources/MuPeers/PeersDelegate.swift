@@ -20,4 +20,9 @@ public protocol PeersDelegate: AnyObject {
     func resetItem(_ : PlayItem)
     func playItem(_ : PlayItem, from: DataFrom)
     func dropped(from: DataFrom)
+    func joined(from: DataFrom)
+}
+public extension PeersDelegate {
+    // default no-op keeps existing conformers source-compatible
+    func joined(from: DataFrom) { }
 }

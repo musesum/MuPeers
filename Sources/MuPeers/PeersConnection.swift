@@ -263,12 +263,25 @@ class PeersConnection: @unchecked Sendable {
 
         switch message.status {
         case .inviting, .accepting, .verified:
-            sendable.insert(connectId)
+            let inserted = sendable.insert(connectId).inserted
             handshaking[connectId] = PeerHandshake(.verified)
+            if inserted { notifyJoined(connectId) }
         default:
             handshaking[connectId] = PeerHandshake(message.status)
         }
 
+    }
+
+    /// peer became sendable — notify each delegate once (a launch-time
+    /// sendItem burst precedes any verified peer, so joined is the reliable
+    /// moment for consumers to re-send state)
+    func notifyJoined(_ connectId: PeerId) {
+        var seen = Set<ObjectIdentifier>()
+        for updateSet in delegates.values {
+            for update in updateSet where seen.insert(ObjectIdentifier(update)).inserted {
+                update.joined(from: .remote(connectId))
+            }
+        }
     }
 
     func refreshResults(_ results: Set<NWBrowser.Result>) {
@@ -296,6 +309,11 @@ class PeersConnection: @unchecked Sendable {
     }
     
     func handleDisconnection(_ connectId: PeerId) {
+        // already removed (e.g. cancel()'s .cancelled callback re-entering after
+        // disconnectAll) — skip, or delegates get duplicate dropped() notifications
+        guard nwConnect[connectId] != nil
+                || handshaking[connectId] != nil
+                || sendable.contains(connectId) else { return }
         peersLog.status("⛓️‍💥 disconnect: \(connectId)")
         if let connection = nwConnect[connectId] {
             connection.cancel()
@@ -320,6 +338,13 @@ class PeersConnection: @unchecked Sendable {
         }
     }
     
+    /// drop every live connection — cancelPeers uses this so Bonjour-off also disconnects
+    func disconnectAll() {
+        for connectId in Array(nwConnect.keys) {
+            handleDisconnection(connectId)
+        }
+    }
+
     func transferConnection(from oldKey: String, to newKey: String, connection: NWConnection) {
         peersLog.status("🔄 transfer connection: \(oldKey) -> \(newKey)")
         

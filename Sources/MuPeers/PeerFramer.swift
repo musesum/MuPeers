@@ -20,7 +20,8 @@ public enum FramerType: UInt32, Codable, Sendable {
     case tapeTrack    // tape events
     case playStatus   // tape .recording, .playback, .stopped
     case archiveFrame // archive sharing
-    
+    case gestureItem  // gesture / control event
+
     public var description: String {
         switch self {
         case .invalid      : return "invalid"
@@ -33,6 +34,7 @@ public enum FramerType: UInt32, Codable, Sendable {
         case .tapeTrack    : return "tapeTrack"
         case .playStatus   : return "playStatus"
         case .archiveFrame : return "archive"
+        case .gestureItem  : return "gestureItem"
         }
     }
     /// this is a placeholder, no way to select
@@ -51,6 +53,7 @@ public enum FramerType: UInt32, Codable, Sendable {
         case .tapeTrack    : return .responsiveData
         case .playStatus   : return .responsiveData
         case .archiveFrame : return .responsiveData
+        case .gestureItem  : return .responsiveData
         }
     }
 }

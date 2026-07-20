@@ -110,9 +110,9 @@ final public class Peers: @unchecked Sendable {
         
         if let updateSet = connection.delegates[item.type] {
             for update in updateSet {
-                
+
                 update.playItem(item, from: from)
-                
+
                 // Check if not remote
                 var isRemote = false
                 if case .remote = from { isRemote = true }
@@ -121,6 +121,8 @@ final public class Peers: @unchecked Sendable {
                     Task { await connection.broadcastData(item.type, item.data) }
                 }
             }
+        } else {
+            peersLog.log("⚠️ playItem dropped: no delegate for \(item.type.description)")
         }
     }
     public func resetPlayItems(_ playItems: [PlayItem]) {

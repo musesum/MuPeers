@@ -26,7 +26,7 @@ extension Peers { // list
 
     func listConnected() -> String {
         var ret = ""
-        for peerId in connection.nwConnect.keys {
+        for peerId in connection.links.keys {
             ret += "\(peerId)\n"
         }
         if ret.count > 0 {

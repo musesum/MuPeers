@@ -16,13 +16,16 @@ class PeersBrowser: @unchecked Sendable {
     init(_ peerId: PeerId,
          _ peersLog: PeersLog,
          _ peersConfig: PeersConfig,
-         _ connections: PeersConnection) {
+         _ connections: PeersConnection,
+         startNow: Bool = true) {  // false when another backend owns startup
 
         self.peerId = peerId
         self.peersLog = peersLog
         self.connections = connections
         self.peersConfig = peersConfig
-        setupBrowser()
+        if startNow {
+            setupBrowser()
+        }
     }
 
     // Start browsing for peers

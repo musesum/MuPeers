@@ -3,19 +3,23 @@
 import SwiftUI
 import UIKit
 
+/// no tape in the test app — record/playback not exercised here
+struct NoTape: TapeProto {
+    func playItem(_ item: PlayItem) async { }
+}
+
 @main
 struct PeersTestApp: App {
-
-    // see info.plist for _mupeers._tcp
-    // set secret to "" if you want to send in the clear,
-    // which seems to avoid some ssl issues
-    let config: PeersConfig(service: "_mupeers._tcp", secret: "")
 
     let peers: Peers
 
     init() {
-        self.peers = Peers(config, mirror: nil, logging: true)
-        self.peers.setupPeers()
+        // see info.plist for _mupeers._tcp
+        // set secret to "" if you want to send in the clear,
+        // which seems to avoid some ssl issues
+        let config = PeersConfig(service: "_mupeers._tcp", secret: "")
+        self.peers = Peers(config, logging: true)
+        self.peers.setupPeers(NoTape())
     }
 
     var body: some Scene {
@@ -132,6 +136,8 @@ public struct PeersTestView: View {
         self.appViewModel = appViewModel
     }
 
+    @State private var backend: PeersBackend = .legacy
+
     public var body: some View {
         VStack ( alignment: .leading){
             HStack {
@@ -139,6 +145,18 @@ public struct PeersTestView: View {
                     .imageScale(.large)
                     .foregroundStyle(.tint)
                 Text("\(Idiom.name) (\(peers.peerId)) \(appViewModel.counter)s")
+            }
+            Picker("Backend", selection: $backend) {
+                Text("legacy NW").tag(PeersBackend.legacy)
+                Text("modern 26").tag(PeersBackend.modern)
+            }
+            .pickerStyle(.segmented)
+            .disabled(!PeersBackend.modernAvailable)
+            .onChange(of: backend) { _, newBackend in
+                peers.setBackend(newBackend)
+            }
+            .onAppear {
+                backend = peers.backend
             }
             Text("")
             Text(peers.listPeerStatus())

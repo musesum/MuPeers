@@ -11,21 +11,18 @@ final public class Peers: @unchecked Sendable {
         PeersConfig(service: "_deepmuse-peer._tcp",secret: ""),
         logging: true)
     
-    let browser    : PeersBrowser
-    let listener   : PeersListener
     let connection : PeersConnection
     let peersLog   : PeersLog
     let peersConfig: PeersConfig
     var tapeProto  : TapeProto?
 
     public let peerId: String
-    public private(set) var backend: PeersBackend
     let peerState = PeerState()   // internal for @testable flag assertions
     // serializes setup/cancel transitions so the LAST call wins — two unordered
     // Tasks (rapid toggle off→on) could otherwise end opposite the caller's intent
     var peersTask: Task<Void, Never>?   // internal so tests can await settlement
 
-    // modern pair stored untyped — Peers floor is iOS 17, ModernListener is 26+
+    // pair stored untyped — Peers floor is iOS 17, ModernListener is 26+
     private var modernListenerAny: Any?
     private var modernBrowserAny: Any?
 
@@ -41,33 +38,15 @@ final public class Peers: @unchecked Sendable {
         self.peerId     = PeersPrefix + UInt64.random(in: 1...UInt64.max).base32
         self.peersLog   = PeersLog       (peerId, logging)
         self.peersConfig = config
-        self.backend    = Peers.resolveBackend(config.backend ?? PeersBackend.stored ?? .legacy, config, peersLog)
         self.connection = PeersConnection(peerId, peersLog, config)
-        let startLegacy = backend == .legacy
-        self.listener   = PeersListener  (peerId, peersLog, config, connection, startNow: startLegacy)
-        self.browser    = PeersBrowser   (peerId, peersLog, config, connection, startNow: startLegacy)
-        if backend == .modern {
-            setupModernPair()
+        if !config.secret.isEmpty {
+            peersLog.log("⚠️ TLS secret not supported; sending in the clear")
         }
+        setupTransport()
         //must call setupPeers(tapeProto) to allow record, playback
     }
 
-    /// requested → usable backend; modern needs OS 26 and an empty secret
-    static func resolveBackend(_ requested: PeersBackend,
-                               _ config: PeersConfig,
-                               _ peersLog: PeersLog) -> PeersBackend {
-        var resolved = requested.resolved
-        if requested == .modern, resolved == .legacy {
-            peersLog.log("⚠️ modern backend requires OS 26; using legacy")
-        }
-        if resolved == .modern, !config.secret.isEmpty {
-            peersLog.log("⚠️ modern backend TLS secret not supported; using legacy")
-            resolved = .legacy
-        }
-        return resolved
-    }
-
-    private func setupModernPair() {
+    private func setupTransport() {
         if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
             if modernListenerAny == nil {
                 modernListenerAny = ModernListener(peerId, peersLog, peersConfig, connection)
@@ -75,44 +54,14 @@ final public class Peers: @unchecked Sendable {
             }
             modernListener?.setupListener()
             modernBrowser?.setupBrowser()
-        }
-    }
-    private func setupTransport() {
-        if backend == .modern {
-            setupModernPair()
         } else {
-            listener.setupListener()
-            browser.setupBrowser()
+            peersLog.log("⚠️ peer networking requires OS 26")
         }
     }
     private func cancelTransport() {
-        listener.cancelListener()
-        browser.cancelBrowser()
         if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
             modernListener?.cancelListener()
             modernBrowser?.cancelBrowser()
-        }
-    }
-
-    /// runtime switch between transport backends; serialized like setup/cancel
-    /// so a rapid toggle still ends on the last call
-    @MainActor
-    public func setBackend(_ requested: PeersBackend) {
-        UserDefaults.standard.set(requested.rawValue, forKey: PeersBackend.defaultsKey)
-        let previous = peersTask
-        peersTask = Task {
-            await previous?.value
-            let resolved = Peers.resolveBackend(requested, peersConfig, peersLog)
-            guard resolved != backend else { return }
-            let active = await peerState.hasAny([.send, .receive])
-            if active {
-                cancelTransport()
-                connection.disconnectAll()
-            }
-            backend = resolved
-            if active {
-                setupTransport()
-            }
         }
     }
     // @MainActor: NW callbacks run on .main; off-main setup/cancel would race the

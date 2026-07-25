@@ -6,7 +6,7 @@ import Network
 @testable import MuPeers
 
 /// Lifecycle state-machine tests for setupPeers/cancelPeers: last-call-wins ordering,
-/// instance teardown/recreation, atomic PeerState flags, tape independence. No test
+/// transport teardown/recreation, atomic PeerState flags, tape independence. No test
 /// asserts network readiness — only instance and flag state, so runs stay deterministic.
 @MainActor
 final class MuPeersLifecycleTests: XCTestCase {
@@ -24,40 +24,59 @@ final class MuPeersLifecycleTests: XCTestCase {
         await peers.peersTask?.value
     }
 
-    func testInitStartsListenerAndBrowser() {
-        let peers = makePeers()
-        XCTAssertNotNil(peers.listener.listener)
-        XCTAssertNotNil(peers.browser.browser)
+    /// transport requires OS 26; older runtimes leave Peers inert by design
+    private func requireOS26() throws {
+        guard #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) else {
+            throw XCTSkip("peer networking requires OS 26")
+        }
     }
 
-    func testCancelNilsListenerAndBrowserAndClearsFlags() async {
+    func testInitStartsListenerAndBrowser() throws {
+        try requireOS26()
+        let peers = makePeers()
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
+            XCTAssertTrue(peers.modernListener?.isActive ?? false)
+            XCTAssertTrue(peers.modernBrowser?.isActive ?? false)
+        }
+    }
+
+    func testCancelNilsListenerAndBrowserAndClearsFlags() async throws {
+        try requireOS26()
         let peers = makePeers()
         peers.cancelPeers()
         await settle(peers)
-        XCTAssertNil(peers.listener.listener)
-        XCTAssertNil(peers.browser.browser)
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
+            XCTAssertFalse(peers.modernListener?.isActive ?? false)
+            XCTAssertFalse(peers.modernBrowser?.isActive ?? false)
+        }
         let status = await peers.peerState.status
         XCTAssertFalse(status.hasAny([.send, .receive]))
     }
 
-    func testCancelThenSetupRestoresListenerBrowserAndFlags() async {
+    func testCancelThenSetupRestoresListenerBrowserAndFlags() async throws {
+        try requireOS26()
         let peers = makePeers()
         peers.cancelPeers()
         peers.setupPeers(MockTape())
         await settle(peers)
-        XCTAssertNotNil(peers.listener.listener)
-        XCTAssertNotNil(peers.browser.browser)
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
+            XCTAssertTrue(peers.modernListener?.isActive ?? false)
+            XCTAssertTrue(peers.modernBrowser?.isActive ?? false)
+        }
         let status = await peers.peerState.status
         XCTAssertTrue(status.has([.send, .receive]))
     }
 
-    func testLastCallWinsOnRapidToggle() async {
+    func testLastCallWinsOnRapidToggle() async throws {
+        try requireOS26()
         let peers = makePeers()
         // off → on issued back-to-back: end state must be ON
         peers.cancelPeers()
         peers.setupPeers(MockTape())
         await settle(peers)
-        XCTAssertNotNil(peers.listener.listener)
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
+            XCTAssertTrue(peers.modernListener?.isActive ?? false)
+        }
         let onStatus = await peers.peerState.status
         XCTAssertTrue(onStatus.has([.send, .receive]))
 
@@ -65,7 +84,9 @@ final class MuPeersLifecycleTests: XCTestCase {
         peers.setupPeers(MockTape())
         peers.cancelPeers()
         await settle(peers)
-        XCTAssertNil(peers.listener.listener)
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
+            XCTAssertFalse(peers.modernListener?.isActive ?? false)
+        }
         let offStatus = await peers.peerState.status
         XCTAssertFalse(offStatus.hasAny([.send, .receive]))
     }

@@ -6,14 +6,11 @@ public let PeersPrefix: String = "☯︎"
 public struct PeersConfig {
     let service: String
     let secret: String
-    let backend: PeersBackend?  // nil resolves UserDefaults override, else legacy
 
     public init(service: String,
-                secret: String,
-                backend: PeersBackend? = nil) {
+                secret: String) {
 
         self.service = service
         self.secret = secret
-        self.backend = backend
     }
 }

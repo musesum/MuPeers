@@ -136,8 +136,6 @@ public struct PeersTestView: View {
         self.appViewModel = appViewModel
     }
 
-    @State private var backend: PeersBackend = .legacy
-
     public var body: some View {
         VStack ( alignment: .leading){
             HStack {
@@ -145,18 +143,6 @@ public struct PeersTestView: View {
                     .imageScale(.large)
                     .foregroundStyle(.tint)
                 Text("\(Idiom.name) (\(peers.peerId)) \(appViewModel.counter)s")
-            }
-            Picker("Backend", selection: $backend) {
-                Text("legacy NW").tag(PeersBackend.legacy)
-                Text("modern 26").tag(PeersBackend.modern)
-            }
-            .pickerStyle(.segmented)
-            .disabled(!PeersBackend.modernAvailable)
-            .onChange(of: backend) { _, newBackend in
-                peers.setBackend(newBackend)
-            }
-            .onAppear {
-                backend = peers.backend
             }
             Text("")
             Text(peers.listPeerStatus())

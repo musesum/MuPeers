@@ -91,11 +91,6 @@ class PeersConnection: @unchecked Sendable {
         sendData(messageType, connectId, data, peerMessage.text)
     }
 
-    /// legacy entry kept for PeersListener/PeersBrowser callers
-    func setupConnection(_ connection: NWConnection) {
-        registerLink(NWPeerLink(connection, peersLog))
-    }
-
     /// current key for a link — may differ from initialPeerId after transfer
     func currentKey(_ link: PeerLink) -> PeerId {
         objPeerId[ObjectIdentifier(link)] ?? link.initialPeerId
@@ -247,22 +242,6 @@ class PeersConnection: @unchecked Sendable {
         let removeConnections = Set(links.keys).subtracting(refreshedConnections)
         for removeId in removeConnections {
             handleDisconnection(removeId)
-        }
-    }
-
-    /// legacy adapter for NWBrowser results
-    func refreshResults(_ results: Set<NWBrowser.Result>) {
-
-        var discovered: [PeerId: NWEndpoint] = [:]
-
-        for result in results {
-            if case let NWEndpoint.service(name: connectId, type: _, domain: _, interface: _) = result.endpoint {
-                discovered[connectId] = result.endpoint
-            }
-        }
-        refreshPeers(discovered) { [peersConfig, peersLog] _, endpoint in
-            let parameters = NWParameters.make(secret: peersConfig.secret)
-            return NWPeerLink(NWConnection(to: endpoint, using: parameters), peersLog)
         }
     }
 

@@ -71,7 +71,14 @@ final public class Peers: @unchecked Sendable {
     @MainActor
     public func setupPeers(_ tapeProto: TapeProto) {
         self.tapeProto = tapeProto
+        setupPeers()
+    }
 
+    /// the same start without a registration, for a bonjour switch turned back
+    /// on: the tapeProto handed over at launch is kept, so record and playback
+    /// survive a stop
+    @MainActor
+    public func setupPeers() {
         let previous = peersTask
         peersTask = Task {
             await previous?.value
@@ -116,6 +123,8 @@ final public class Peers: @unchecked Sendable {
     /// the expense of getData() encoding the message
     public func sendItem(_ type: FramerType,
                          path: String = "",
+                         phase: Int? = nil,
+                         finger: Int? = nil,
                          _ getData: @Sendable ()->Data?) async {
 
         let status = await peerState.status
@@ -124,7 +133,7 @@ final public class Peers: @unchecked Sendable {
 
         // maybe record this item
         if let tapeProto, status.taping {
-            let item = PlayItem(type, data, path: path)
+            let item = PlayItem(type, data, path: path, phase: phase, finger: finger)
             await tapeProto.playItem(item)
         }
         if status.has(.send),

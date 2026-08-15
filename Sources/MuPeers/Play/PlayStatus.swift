@@ -14,6 +14,13 @@ public struct PlayStatus: Codable, Sendable {
         self.playState = PlayState([.loop, .stop])
         self.playBegan = 0
     }
+    /// Restore a persisted track identity (archive decode) instead of minting a new one.
+    public init(_ deckId: Int, trackId: Int) {
+        self.deckId    = deckId
+        self.trackId   = trackId
+        self.playState = PlayState([.loop, .stop])
+        self.playBegan = 0
+    }
     public var script: String {
         "deck/track: \(deckId.script5)/\(trackId.script5) state: \(playState.description))"
     }

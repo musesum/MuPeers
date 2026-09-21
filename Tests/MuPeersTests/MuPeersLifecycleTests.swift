@@ -31,13 +31,39 @@ final class MuPeersLifecycleTests: XCTestCase {
         }
     }
 
-    func testInitStartsListenerAndBrowser() throws {
+    /// init starts no transport (a host with Bonjour off never advertises or browses);
+    /// setupPeers() is the one start.
+    func testInitStartsNothingUntilSetupPeers() async throws {
         try requireOS26()
         let peers = makePeers()
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
+            XCTAssertFalse(peers.modernListener?.isActive ?? false)
+            XCTAssertFalse(peers.modernBrowser?.isActive ?? false)
+        }
+        let idle = await peers.peerState.status
+        XCTAssertFalse(idle.hasAny([.send, .receive]))
+        peers.setupPeers()
+        await settle(peers)
         if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
             XCTAssertTrue(peers.modernListener?.isActive ?? false)
             XCTAssertTrue(peers.modernBrowser?.isActive ?? false)
         }
+        let started = await peers.peerState.status
+        XCTAssertTrue(started.has([.send, .receive]))
+    }
+
+    /// setTapeProto registers the deck with no transport: recording works with Bonjour off.
+    func testSetTapeProtoStartsNoTransport() async throws {
+        try requireOS26()
+        let peers = makePeers()
+        peers.setTapeProto(MockTape())
+        await peers.setTape(on: true)
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, watchOS 26.0, *) {
+            XCTAssertFalse(peers.modernListener?.isActive ?? false)
+        }
+        let status = await peers.peerState.status
+        XCTAssertTrue(status.has(.taping))
+        XCTAssertFalse(status.hasAny([.send, .receive]))
     }
 
     func testCancelNilsListenerAndBrowserAndClearsFlags() async throws {

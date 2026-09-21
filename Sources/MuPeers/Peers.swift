@@ -42,8 +42,13 @@ final public class Peers: @unchecked Sendable {
         if !config.secret.isEmpty {
             peersLog.log("⚠️ TLS secret not supported; sending in the clear")
         }
-        setupTransport()
-        //must call setupPeers(tapeProto) to allow record, playback
+        // No transport here: listener + browser start from setupPeers() only, so a host that
+        // keeps Bonjour off never advertises, browses, or raises the Local Network prompt.
+    }
+
+    /// Register the tape deck without starting the transport (record/playback work offline).
+    public func setTapeProto(_ tapeProto: TapeProto) {
+        self.tapeProto = tapeProto
     }
 
     private func setupTransport() {
@@ -142,6 +147,20 @@ final public class Peers: @unchecked Sendable {
         }  
     }
     
+    /// Send only to a verified transport peer. Targeted app data is never broadcast or recorded to tape.
+    @MainActor
+    @discardableResult
+    public func sendItem(_ type: FramerType,
+                         to peer: String,
+                         _ getData: @Sendable () -> Data?) async -> Bool {
+        guard await peerState.has(.send), !Task.isCancelled,
+              connection.sendable.contains(peer),
+              let link = connection.links[peer], link.isReady,
+              let data = getData() else { return false }
+        connection.sendData(type, peer, data)
+        return true
+    }
+
     public func playItem(_ playState: PlayState,
                          _ item: PlayItem,
                          _ from: DataFrom) {

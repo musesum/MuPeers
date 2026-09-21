@@ -4,7 +4,7 @@ import Network
 import SwiftUI
 
 public actor PeerState {
-    public var status = PeersOpt([.send, .receive])
+    public var status = PeersOpt()   // nothing runs until setupPeers() inserts send + receive
     func hasAny(_ value: PeersOpt) -> Bool {
         return status.hasAny(value)
     }
